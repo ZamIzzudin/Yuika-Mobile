@@ -7,6 +7,9 @@
  * Primitif pure-JS @noble/curves (jalan di Hermes tanpa polyfill).
  */
 import { ed25519, x25519 } from "@noble/curves/ed25519.js";
+import { gcm } from "@noble/ciphers/aes.js";
+import { hkdf } from "@noble/hashes/hkdf.js";
+import { sha256 } from "@noble/hashes/sha2.js";
 import { getRandomBytes } from "expo-crypto";
 
 export interface DeviceKeys {
@@ -45,7 +48,8 @@ export function b64ToBytes(s: string): Uint8Array {
     const c2 = B64.indexOf(clean[i + 2] ?? "A");
     const c3 = B64.indexOf(clean[i + 3] ?? "A");
     out[o++] = (c0 << 2) | (c1 >> 4);
-    if (clean[i + 2] && clean[i + 2] !== "=") out[o++] = ((c1 & 15) << 4) | (c2 >> 2);
+    if (clean[i + 2] && clean[i + 2] !== "=")
+      out[o++] = ((c1 & 15) << 4) | (c2 >> 2);
     if (clean[i + 3] && clean[i + 3] !== "=") out[o++] = ((c2 & 3) << 6) | c3;
   }
   return out.subarray(0, o);
@@ -57,10 +61,20 @@ export function hex(bytes: Uint8Array): string {
 
 // ── PEM PKCS8/SPKI (header DER standar, identik export node:crypto) ───────
 
-const ED_PKCS8 = new Uint8Array([0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x04, 0x22, 0x04, 0x20]);
-const ED_SPKI = new Uint8Array([0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00]);
-const X_PKCS8 = new Uint8Array([0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, 0x04, 0x22, 0x04, 0x20]);
-const X_SPKI = new Uint8Array([0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, 0x03, 0x21, 0x00]);
+const ED_PKCS8 = new Uint8Array([
+  0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x04,
+  0x22, 0x04, 0x20,
+]);
+const ED_SPKI = new Uint8Array([
+  0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00,
+]);
+const X_PKCS8 = new Uint8Array([
+  0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, 0x04,
+  0x22, 0x04, 0x20,
+]);
+const X_SPKI = new Uint8Array([
+  0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, 0x03, 0x21, 0x00,
+]);
 
 function concat(...parts: Uint8Array[]): Uint8Array {
   const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
@@ -72,7 +86,10 @@ function concat(...parts: Uint8Array[]): Uint8Array {
   return out;
 }
 
-function pemEncode(der: Uint8Array, label: "PRIVATE KEY" | "PUBLIC KEY"): string {
+function pemEncode(
+  der: Uint8Array,
+  label: "PRIVATE KEY" | "PUBLIC KEY",
+): string {
   const b64 = bytesToB64(der);
   const lines = b64.match(/.{1,64}/g) ?? [];
   return `-----BEGIN ${label}-----\n${lines.join("\n")}\n-----END ${label}-----\n`;
@@ -100,15 +117,73 @@ export function generateDeviceKeys(): DeviceKeys {
 }
 
 /** `sig = base64(Ed25519(seed, deviceId|nonce))` — auth relay SPEC §3. */
-export function signChallenge(signPrivPem: string, deviceId: string, nonce: string): string {
+export function signChallenge(
+  signPrivPem: string,
+  deviceId: string,
+  nonce: string,
+): string {
   const seed = pkcs8ToRaw(signPrivPem);
   const msg = new TextEncoder().encode(`${deviceId}|${nonce}`);
   return bytesToB64(ed25519.sign(msg, seed));
 }
 
 /** Seal payload ke host (X25519 ECDH + HKDF + AES-GCM) — fase remote (B8). */
-export function deriveSharedKey(dhPrivPem: string, dhPubPem: string): Uint8Array {
+export function deriveSharedKey(
+  dhPrivPem: string,
+  dhPubPem: string,
+): Uint8Array {
   const scalar = pkcs8ToRaw(dhPrivPem);
-  const theirPub = b64ToBytes(dhPubPem.replace(/-----[A-Z ]+-----|\s/g, "")).subarray(12);
+  const theirPub = b64ToBytes(
+    dhPubPem.replace(/-----[A-Z ]+-----|\s/g, ""),
+  ).subarray(12);
   return x25519.getSharedSecret(scalar, theirPub);
+}
+
+// ── Envelope E2E (SPEC-PROTOCOL §5; identik @yuika/crypto seal/open) ───────
+// key = HKDF-SHA256(X25519(dhPriv, peerDhPub), salt=aad, info="", L=32);
+// box = base64(iv[12] ‖ AES-256-GCM ct ‖ tag[16]), AAD = "from.deviceId|to.deviceId".
+
+const IV_LEN = 12;
+const KEY_LEN = 32;
+
+function deriveBoxKey(
+  dhPrivPem: string,
+  peerDhPubPem: string,
+  aad: string,
+): Uint8Array {
+  const secret = deriveSharedKey(dhPrivPem, peerDhPubPem);
+  const salt = new TextEncoder().encode(aad);
+  return hkdf(sha256, secret, salt, new Uint8Array(0), KEY_LEN);
+}
+
+/** Seal RemoteAction → base64 box. */
+export function sealBox(
+  from: { deviceId: string; dhPriv: string },
+  to: { deviceId: string; dhPub: string },
+  plaintext: string,
+): string {
+  const aad = `${from.deviceId}|${to.deviceId}`;
+  const key = deriveBoxKey(from.dhPriv, to.dhPub, aad);
+  const iv = getRandomBytes(IV_LEN);
+  const aadBytes = new TextEncoder().encode(aad);
+  const ct = gcm(key, iv, aadBytes).encrypt(
+    new TextEncoder().encode(plaintext),
+  );
+  return bytesToB64(concat(iv, ct));
+}
+
+/** Buka box dari host → string JSON; throw bila kunci/AAD salah. */
+export function openBox(
+  to: { deviceId: string; dhPriv: string },
+  from: { deviceId: string; dhPub: string },
+  boxB64: string,
+): string {
+  const aad = `${from.deviceId}|${to.deviceId}`;
+  const key = deriveBoxKey(to.dhPriv, from.dhPub, aad);
+  const raw = b64ToBytes(boxB64);
+  if (raw.length < IV_LEN + 16) throw new Error("box too short");
+  const iv = raw.subarray(0, IV_LEN);
+  const ct = raw.subarray(IV_LEN);
+  const pt = gcm(key, iv, new TextEncoder().encode(aad)).decrypt(ct);
+  return new TextDecoder().decode(pt);
 }
