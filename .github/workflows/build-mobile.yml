@@ -1,0 +1,67 @@
+name: build-mobile
+
+# Build APK release (signed) untuk Yuika Mobile.
+# Trigger manual dari tab Actions (Run workflow) — atau via API/gh.
+# versionCode otomatis = run number, jadi APK baru selalu bisa
+# di-install di atas versi lama tanpa uninstall.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set versionCode = run number
+        run: |
+          node -e "
+            const fs = require('fs');
+            const a = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            a.expo.android = a.expo.android || {};
+            a.expo.android.versionCode = Number(process.env.GITHUB_RUN_NUMBER);
+            fs.writeFileSync('app.json', JSON.stringify(a, null, 2) + '\n');
+            console.log('versionCode =', a.expo.android.versionCode);
+          "
+
+      - name: Prebuild android
+        run: npx expo prebuild -p android --no-install
+
+      - name: Build release APK
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Verify signed
+        run: |
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs \
+            android/app/build/outputs/apk/release/app-release.apk | head -3
+
+      - name: Rename artifact
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk \
+             "yuika-mobile-v0.1.0-${GITHUB_RUN_NUMBER}.apk"
+          ls -la yuika-mobile-*.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yuika-mobile-apk
+          path: yuika-mobile-*.apk
+          retention-days: 30
+          if-no-files-found: error
