@@ -56,9 +56,11 @@ export async function loginWithPortal(portalUrl: string, existingKeys?: DeviceKe
   const { verifier, challenge } = await pkce();
   const state = bytesToB64(Crypto.getRandomBytes(16));
   const authUrl =
-    `${portal}/authorize?client_id=yuika-mobile` +
+    `${portal}/authorize?client=yuika-mobile` +
+    `&response_type=code` +
     `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-    `&code_challenge=${challenge}&state=${encodeURIComponent(state)}`;
+    `&code_challenge=${challenge}&code_challenge_method=S256` +
+    `&state=${encodeURIComponent(state)}`;
 
   const result = await WebBrowser.openAuthSessionAsync(authUrl, REDIRECT_URI);
   if (result.type !== "success") throw new PortalError("sign-in canceled");

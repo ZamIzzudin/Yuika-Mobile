@@ -70,7 +70,6 @@ function relative(ts: number): string {
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: "boot" });
-  const [portalUrl, setPortalUrl] = useState(DEFAULT_PORTAL);
   const [signingIn, setSigningIn] = useState(false);
   const [hosts, setHosts] = useState<HostEntry[] | null>(null);
   const [hostsError, setHostsError] = useState<string | null>(null);
@@ -104,12 +103,9 @@ export default function App() {
     setSigningIn(true);
     try {
       const existing = (await loadSession())?.device; // kunci stabil → idempotent
-      const r = await loginWithPortal(
-        portalUrl.trim() || DEFAULT_PORTAL,
-        existing,
-      );
+      const r = await loginWithPortal(DEFAULT_PORTAL, existing);
       const session: Session = {
-        portalUrl: portalUrl.trim() || DEFAULT_PORTAL,
+        portalUrl: DEFAULT_PORTAL,
         relayUrl: r.relayUrl,
         accountId: r.accountId,
         email: r.email,
@@ -162,17 +158,6 @@ export default function App() {
             Your phone becomes a remote for every host signed in with this
             account: deployed studios and desktop hosts appear here.
           </Text>
-          <Text style={styles.label}>Portal URL</Text>
-          <TextInput
-            value={portalUrl}
-            onChangeText={setPortalUrl}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-            placeholder="https://yuika.notu.dev"
-            placeholderTextColor={C.faint}
-            style={styles.input}
-          />
           <Pressable
             style={[styles.button, signingIn && styles.buttonDisabled]}
             disabled={signingIn}
@@ -181,7 +166,7 @@ export default function App() {
             {signingIn ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Continue to portal</Text>
+              <Text style={styles.buttonText}>Sign in</Text>
             )}
           </Pressable>
         </View>
