@@ -101,6 +101,166 @@ export interface TranscriptMsg {
   at: number;
 }
 
+// ── v1.2: mission-control data shapes ──────────────────────────────────────
+
+export interface ProjectLite {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  kind: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface TaskStats {
+  todo: number;
+  doing: number;
+  review: number;
+  done: number;
+}
+
+export interface ProjectSummary {
+  project: ProjectLite;
+  taskStats: TaskStats;
+  activeDelegations: number;
+  sessions: SessionInfo[];
+}
+
+export interface TaskNode {
+  id: string;
+  parent: string | null;
+  title: string;
+  status: string;
+  assignee: string | null;
+  description?: string | null;
+  children: TaskNode[];
+}
+
+export interface FileNode {
+  name: string;
+  relPath: string;
+  dir: boolean;
+  size: number;
+  children?: FileNode[];
+}
+
+export interface RosterEntry {
+  personaId: string;
+  role: string;
+}
+
+export interface DelegationJob {
+  id: number;
+  parentSessionId: string;
+  childSessionId: string;
+  personaId: string;
+  goal: string;
+  status: "running" | "done" | "error" | "interrupted";
+  summary: string | null;
+  error: string | null;
+  createdAt: number;
+}
+
+export interface ActivityEntry {
+  at: number;
+  sessionId: string | null;
+  personaId: string | null;
+  kind: string;
+  label: string;
+  isError?: boolean;
+}
+
+export interface PersonaLite {
+  id: string;
+  name: string;
+  model: string | null;
+}
+
+export interface BudgetLite {
+  config: Record<string, unknown>;
+  spentToday: number;
+  spentTotal: number;
+  burnRatePerHour?: number;
+  coverage?: string;
+  currency?: string | null;
+  dailyLimitHit?: boolean;
+  totalLimitHit?: boolean;
+}
+
+export interface ProviderLite {
+  kind: string;
+  baseUrl: string;
+  model: string;
+  fallbackModel: string | null;
+  auxModel: string | null;
+  hasApiKey: boolean;
+  keyPreview?: string | null;
+}
+
+export interface ModelRouteState {
+  defaultModel: string;
+  defaultFallback: string | null;
+  overrides: Record<string, { model: string; fallback: string }>;
+  personas: Array<{ id: string; name: string }>;
+}
+
+export interface SettingsState {
+  approvalMode: "ask" | "auto";
+  budget: BudgetLite;
+  provider: ProviderLite;
+  modelRoutes: ModelRouteState;
+  resetPending: boolean;
+}
+
+export interface UsageSummaryLite {
+  calls: number;
+  promptTokens: number;
+  outputTokens: number;
+  byPersona: Array<{ personaId: string; calls: number }>;
+  byModel: Array<{ model: string; calls: number }>;
+}
+
+export interface UsageMatrixRow {
+  personaId: string;
+  model: string;
+  calls: number;
+  promptTokens: number;
+  outputTokens: number;
+  cost: number;
+  currency: string | null;
+}
+
+export interface McpServerLite {
+  name: string;
+  declared?: boolean;
+  trusted: boolean;
+  denyTools?: string[];
+  connected: boolean;
+  toolCount: number;
+  state: string;
+  lastError: string | null;
+}
+
+export interface TerminalInfoLite {
+  id: string;
+  backend: string;
+  workspacePath: string;
+  createdAt: number;
+  lastActivity: number;
+  exited: boolean;
+}
+
+export interface ScreenInfo {
+  key: string;
+  personaId: string | null;
+  url: string | null;
+  title: string | null;
+  status: string;
+  viewers: number;
+  watchers: number;
+}
+
 export type RemoteEvent =
   | { proto: 1; ev: "host.state"; sessions: SessionInfo[]; screens?: unknown[] }
   | { proto: 1; ev: "session.list"; rid: string; sessions: SessionInfo[] }
@@ -141,6 +301,25 @@ export type RemoteEvent =
       approvalId: string;
       resolution: "approved" | "rejected" | "timeout";
     }
+  | { proto: 1; ev: "projects.list"; rid: string; projects: ProjectSummary[] }
+  | { proto: 1; ev: "project.detail"; rid: string; project: ProjectLite; taskStats: TaskStats; activeDelegations: number }
+  | { proto: 1; ev: "project.tasks"; rid: string; projectId: string; tree: TaskNode[] }
+  | { proto: 1; ev: "project.files"; rid: string; projectId: string; tree: FileNode[] }
+  | { proto: 1; ev: "project.file"; rid: string; projectId: string; relPath: string; content: string; truncated: boolean }
+  | { proto: 1; ev: "project.team"; rid: string; projectId: string; roster: RosterEntry[]; delegations: DelegationJob[] }
+  | { proto: 1; ev: "project.activity"; rid: string; projectId: string; entries: ActivityEntry[] }
+  | { proto: 1; ev: "project.sessions"; rid: string; projectId: string; sessions: SessionInfo[] }
+  | { proto: 1; ev: "personas.list"; rid: string; personas: PersonaLite[] }
+  | { proto: 1; ev: "settings.state"; rid?: string } & SettingsState
+  | { proto: 1; ev: "settings.usage"; rid: string; summary: UsageSummaryLite; matrix: UsageMatrixRow[] }
+  | { proto: 1; ev: "settings.mcp"; rid: string; servers: McpServerLite[] }
+  | { proto: 1; ev: "reset.acked"; rid: string; scope: string }
+  | { proto: 1; ev: "terminal.list"; rid: string; sessions: TerminalInfoLite[] }
+  | { proto: 1; ev: "terminal.state"; rid?: string; id: string; info: TerminalInfoLite; replay: string }
+  | { proto: 1; ev: "terminal.output"; id: string; data: string }
+  | { proto: 1; ev: "screens.list"; rid: string; screens: ScreenInfo[] }
+  | { proto: 1; ev: "screen.state"; rid?: string; key: string; status: string; title: string | null; url: string | null }
+  | { proto: 1; ev: "screen.frame"; key: string; data: string }
   | { proto: 1; ev: "error"; rid?: string; code: string; message: string }
   | { proto: 1; ev: "pong_host"; rid: string };
 
@@ -186,8 +365,51 @@ export class RemoteSession {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private backoff = 500;
+  /** v1.2: rid → promise pending untuk request/response (RPC ringan). */
+  private pending = new Map<string, { resolve: (e: RemoteEvent) => void; reject: (err: RelayError) => void; timer: ReturnType<typeof setTimeout> }>();
 
   constructor(private readonly opts: RemoteSessionOpts) {}
+
+  /**
+   * v1.2: request RPC — kirim action ber-rid, resolve pada event balasan
+   * ber-rid sama; reject pada error atau timeout (default 12 dtk).
+   */
+  request<T = RemoteEvent>(act: string, extra: Record<string, unknown> = {}, timeoutMs = 12_000): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      if (this.state === "gone" || this.state === "logged-out") {
+        reject(new RelayError("remote session closed"));
+        return;
+      }
+      const rid = nextRid();
+      const timer = setTimeout(() => {
+        this.pending.delete(rid);
+        reject(new RelayError("host response timeout"));
+      }, timeoutMs);
+      this.pending.set(rid, {
+        resolve: (e) => {
+          clearTimeout(timer);
+          this.pending.delete(rid);
+          resolve(e as T);
+        },
+        reject: (err) => {
+          clearTimeout(timer);
+          this.pending.delete(rid);
+          reject(err);
+        },
+        timer,
+      });
+      void this.sendAction({ proto: 1, act, rid, ...extra });
+    });
+  }
+
+  private settleRid(ev: RemoteEvent): void {
+    const rid = (ev as { rid?: string }).rid;
+    if (!rid) return;
+    const p = this.pending.get(rid);
+    if (!p) return;
+    if (ev.ev === "error") p.reject(new RelayError(ev.message || ev.code));
+    else p.resolve(ev);
+  }
 
   get connState(): RemoteConnState {
     return this.state;
@@ -279,7 +501,9 @@ export class RemoteSession {
           const parsed = JSON.parse(pt) as Record<string, unknown>;
           // Validasi longgar: proto + discriminant string; unknown diabaikan.
           if (parsed.proto !== 1 || typeof parsed.ev !== "string") return;
-          this.opts.onEvent(parsed as unknown as RemoteEvent);
+          const re = parsed as unknown as RemoteEvent;
+          this.settleRid(re); // v1.2: RPC reply/error by rid
+          this.opts.onEvent(re);
         } catch {
           // box rusak/kunci salah: diam (bisa di-log host), jangan putus sesi.
         }
@@ -390,6 +614,11 @@ export class RemoteSession {
   close(): void {
     this.closedByUser = true;
     this.queue.length = 0;
+    for (const p of this.pending.values()) {
+      clearTimeout(p.timer);
+      p.reject(new RelayError("remote session closed"));
+    }
+    this.pending.clear();
     this.teardown();
   }
 }
