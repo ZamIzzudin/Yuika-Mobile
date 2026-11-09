@@ -22,7 +22,7 @@ const PROPS_LOADER = [
 const SIGNING_CONFIGS = [
   "signingConfigs {",
   "        release {",
-  "            if (yuikaReleasePropsFile.exists()) {",
+  "            if (yuikaPropsFile.exists()) {",
   '                storeFile rootProject.file(yuikaReleaseProps["storeFile"])',
   '                keyAlias yuikaReleaseProps["keyAlias"]',
   '                storePassword yuikaReleaseProps["storePassword"]',
