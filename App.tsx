@@ -1,6 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { DEFAULT_PORTAL, loginWithPortal, PortalError } from "./src/portal";
 import { listHosts, RelayError, type HostEntry } from "./src/relay";
@@ -95,7 +95,7 @@ export default function App() {
     return (
       <View style={[styles.root, styles.center]}>
         <StatusBar style="light" />
-        <Text style={styles.wordmark}>YUIKA</Text>
+        <Image source={require("./assets/logo.png")} style={styles.logoBoot} resizeMode="contain" />
         <ActivityIndicator color={C.accent} style={{ marginTop: 16 }} />
       </View>
     );
@@ -105,7 +105,7 @@ export default function App() {
     return (
       <View style={[styles.root, styles.center]}>
         <StatusBar style="light" />
-        <Text style={styles.wordmark}>YUIKA</Text>
+        <Image source={require("./assets/logo.png")} style={styles.logoLogin} resizeMode="contain" />
         <Text style={styles.tagline}>Studio Persona for Agentic AI</Text>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Sign in with the Yuika portal</Text>
@@ -137,6 +137,7 @@ export default function App() {
     <View style={styles.root}>
       <StatusBar style="light" />
       <View style={styles.header}>
+        <Image source={require("./assets/logo.png")} style={styles.logoHeader} resizeMode="contain" />
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Hosts</Text>
           <Text style={styles.headerSub} numberOfLines={1}>
@@ -191,7 +192,9 @@ export default function App() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.canvas, padding: 20 },
   center: { alignItems: "center", justifyContent: "center" },
-  wordmark: { color: C.text, fontSize: 40, fontWeight: "700", letterSpacing: 8 },
+  logoBoot: { width: 72, height: 72, borderRadius: 18 },
+  logoLogin: { width: 88, height: 88, borderRadius: 22, marginBottom: 6 },
+  logoHeader: { width: 34, height: 34, borderRadius: 9, marginRight: 12 },
   tagline: { color: C.dim, fontSize: 13, marginTop: 6 },
   card: { backgroundColor: C.surface, borderColor: C.line, borderWidth: 1, borderRadius: 14, padding: 18, marginTop: 36, width: "100%", maxWidth: 360, gap: 10 },
   cardTitle: { color: C.text, fontSize: 15, fontWeight: "600" },
