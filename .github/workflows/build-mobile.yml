@@ -25,6 +25,12 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # Cache distribusi gradle + dependencies antar-run (runner flaky
+      # saat download services.gradle.org / maven central → pola 504).
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
       - name: Install dependencies
         run: npm ci
 
@@ -39,8 +45,32 @@ jobs:
             console.log('versionCode =', a.expo.android.versionCode);
           "
 
+      - name: Cache Gradle distribution zip
+        uses: actions/cache@v4
+        with:
+          path: ~/gradle-9.4.1-bin.zip
+          key: gradle-dist-9.4.1
+
+      # Unduh distribusi via curl (retry keras) — wrapper lalu memakai zip
+      # lokal via distributionUrl file://, tidak pernah menyentuh jaringan.
+      - name: Download Gradle 9.4.1
+        run: |
+          ZIP="$HOME/gradle-9.4.1-bin.zip"
+          if [ ! -s "$ZIP" ]; then
+            curl -fL --retry 10 --retry-delay 5 --retry-all-errors \
+              --connect-timeout 30 -o "$ZIP" \
+              https://services.gradle.org/distributions/gradle-9.4.1-bin.zip
+          fi
+          ls -la "$ZIP"
+
       - name: Prebuild android
         run: npx expo prebuild -p android --no-install
+
+      - name: Point wrapper at local distribution
+        run: |
+          sed -i "s|^distributionUrl=.*|distributionUrl=file\://$HOME/gradle-9.4.1-bin.zip|" \
+            android/gradle/wrapper/gradle-wrapper.properties
+          cat android/gradle/wrapper/gradle-wrapper.properties
 
       - name: Build release APK
         working-directory: android

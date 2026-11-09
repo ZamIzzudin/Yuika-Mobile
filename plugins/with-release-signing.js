@@ -66,11 +66,36 @@ function patchBuildGradle(src) {
 }
 
 module.exports = function withReleaseSigning(config) {
+  // wrapper: timeout download distribusi gradle default 10 dtk terlalu pendek
+  // utk runner CI yang flaky — naikkan ke 120 dtk (ditulis manual via
+  // dangerous mod: withGradleWrapperProperties tidak tersedia di versi ini).
+  const withWrapperTimeout = (cfg) =>
+    withDangerousMod(cfg, [
+      "android",
+      (c) => {
+        const fsx = require("fs");
+        const pathx = require("path");
+        const p = pathx.join(c.modRequest.platformProjectRoot, "gradle", "wrapper", "gradle-wrapper.properties");
+        if (fsx.existsSync(p)) {
+          const out = fsx
+            .readFileSync(p, "utf8")
+            .split("\n")
+            .filter((l) => !l.startsWith("networkTimeout="))
+            .concat("networkTimeout=120000")
+            .join("\n");
+          fsx.writeFileSync(p, out);
+        }
+        return c;
+      },
+    ]);
+
   return withDangerousMod(
-    withAppBuildGradle(config, (cfg) => {
-      cfg.modResults.contents = patchBuildGradle(cfg.modResults.contents);
-      return cfg;
-    }),
+    withWrapperTimeout(
+      withAppBuildGradle(config, (cfg) => {
+        cfg.modResults.contents = patchBuildGradle(cfg.modResults.contents);
+        return cfg;
+      })
+    ),
     [
       "android",
       (cfg) => {
