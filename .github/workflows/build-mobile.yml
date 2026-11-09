@@ -76,7 +76,14 @@ jobs:
         working-directory: android
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleRelease --no-daemon
+          # Runner GitHub kerap kena 504 transien saat mengunduh dependency
+          # Maven (kotlin-compiler dsb.) — retry; Gradle melanjutkan dari cache.
+          for i in 1 2 3; do
+            echo "gradle attempt $i"
+            ./gradlew assembleRelease --no-daemon && exit 0
+            sleep 30
+          done
+          exit 1
 
       - name: Verify signed
         run: |

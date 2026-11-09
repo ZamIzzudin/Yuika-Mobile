@@ -1,0 +1,40 @@
+# Codemagic: build release APK Yuika Mobile.
+# Dokumentasi lengkap + integrasi agent: docs/CODEMAGIC.md (repo studio).
+# workflowId untuk API = nama key di bawah "workflows" (android-release).
+workflows:
+  android-release:
+    name: Yuika Mobile Android Release
+    instance_type: linux
+    max_build_duration: 40
+    environment:
+      node: 22
+      java: 17
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: false
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Set versionCode = CM_BUILD_NUMBER
+        script: |
+          node -e "
+            const fs = require('fs');
+            const a = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            a.expo.android = a.expo.android || {};
+            a.expo.android.versionCode = Number(process.env.CM_BUILD_NUMBER);
+            fs.writeFileSync('app.json', JSON.stringify(a, null, 2) + '\n');
+            console.log('versionCode =', a.expo.android.versionCode);
+          "
+      - name: Prebuild android
+        script: npx expo prebuild -p android --no-install
+      - name: Build release APK (signed via keys/ + config plugin)
+        script: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon
+    artifacts:
+      - android/app/build/outputs/apk/release/*.apk
