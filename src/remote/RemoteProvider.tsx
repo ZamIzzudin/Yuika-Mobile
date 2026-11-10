@@ -2,13 +2,15 @@
 // overlay approvals. Semua layar turun lewat RemoteCtx (request RPC + bus
 // event). Project-oriented: tab Projects / Screens / Settings.
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Icon, type IconName } from "../components/Icon";
 import type { DeviceKeys } from "../crypto";
 import type { HostEntry } from "../relay";
 import { RemoteSession, nextRid, type RemoteConnState, type RemoteEvent } from "../relay";
 import { C } from "../theme";
-import { Btn, Card, Chip } from "../ui";
+import { Btn, Card, Chip, Txt } from "../ui";
 import { ProjectsScreen } from "../screens/ProjectsScreen";
 import { ProjectScreen } from "../screens/ProjectScreen";
 import { SessionChat } from "../screens/SessionChat";
@@ -116,6 +118,7 @@ export function RemoteProvider({
 
   const push = useCallback((e: StackEntry) => setStack((s) => [...s, e]), []);
   const pop = useCallback(() => setStack((s) => s.slice(0, -1)), []);
+  const insets = useSafeAreaInsets();
 
   const api = useMemo<RemoteApi>(() => ({ rs, conn, host, subscribe, push, pop }), [rs, conn, host, subscribe, push, pop]);
 
@@ -172,7 +175,7 @@ export function RemoteProvider({
             flexDirection: "row",
             alignItems: "center",
             gap: 10,
-            paddingTop: 14,
+            paddingTop: insets.top + 8,
             paddingHorizontal: 16,
             paddingBottom: 10,
           }}
@@ -192,12 +195,12 @@ export function RemoteProvider({
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: C.text, fontSize: 20, lineHeight: 24, marginTop: -2 }}>‹</Text>
+              <Icon name="chev-l" size={18} color={C.text} />
             </Pressable>
           ) : null}
-          <Text style={{ color: C.text, fontSize: 17, fontWeight: "700", flex: 1 }} numberOfLines={1}>
+          <Txt style={{ color: C.text, fontSize: 17, fontWeight: "700", flex: 1 }} numberOfLines={1}>
             {host.name}
-          </Text>
+          </Txt>
           <View
             style={{
               width: 9,
@@ -207,24 +210,24 @@ export function RemoteProvider({
                 conn.state === "joined" ? C.ok : conn.state === "gone" || conn.state === "logged-out" ? C.danger : C.warn,
             }}
           />
-          <Text style={{ color: C.dim, fontSize: 12.5 }}>{statusText}</Text>
+          <Txt style={{ color: C.dim, fontSize: 12.5 }}>{statusText}</Txt>
         </View>
 
-        <View style={{ flex: 1 }}>{body}</View>
+        <View style={{ flex: 1, paddingBottom: stack.length > 0 ? insets.bottom : 0 }}>{body}</View>
 
         {approvals.length > 0 ? (
           <View style={{ maxHeight: 300, paddingHorizontal: 16, paddingBottom: 6 }}>
             {approvals.slice(0, 2).map((a) => (
               <Card key={a.approvalId} style={{ marginBottom: 8, gap: 8 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Text style={{ color: C.text, fontSize: 14, fontWeight: "700", flex: 1 }} numberOfLines={1}>
+                  <Txt style={{ color: C.text, fontSize: 14, fontWeight: "700", flex: 1 }} numberOfLines={1}>
                     {a.title}
-                  </Text>
+                  </Txt>
                   <Chip label={a.risk} tone={a.risk === "high" ? "danger" : a.risk === "medium" ? "warn" : "dim"} />
                 </View>
-                <Text style={{ color: C.dim, fontSize: 12.5, lineHeight: 18 }} numberOfLines={4}>
+                <Txt style={{ color: C.dim, fontSize: 12.5, lineHeight: 18 }} numberOfLines={4}>
                   {a.summary}
-                </Text>
+                </Txt>
                 <View style={{ flexDirection: "row", gap: 8 }}>
                   <Btn label="Reject" tone="dim" outline small onPress={() => resolveApproval(a.approvalId, false)} />
                   <View style={{ flex: 1 }}>
@@ -234,9 +237,9 @@ export function RemoteProvider({
               </Card>
             ))}
             {approvals.length > 2 ? (
-              <Text style={{ color: C.faint, fontSize: 11.5, textAlign: "center" }}>
+              <Txt style={{ color: C.faint, fontSize: 11.5, textAlign: "center" }}>
                 +{approvals.length - 2} more waiting
-              </Text>
+              </Txt>
             ) : null}
           </View>
         ) : null}
@@ -248,23 +251,31 @@ export function RemoteProvider({
               borderTopColor: C.line,
               borderTopWidth: 1,
               backgroundColor: C.surface,
-              paddingBottom: 18,
-              paddingTop: 8,
+              paddingBottom: insets.bottom + 8,
+              paddingTop: 6,
             }}
           >
             {(
               [
-                ["projects", "Projects"],
-                ["screens", "Screens"],
-                ["settings", "Settings"],
-              ] as Array<[Tab, string]>
-            ).map(([t, label]) => {
+                ["projects", "Projects", "folder"],
+                ["screens", "Screens", "monitor"],
+                ["settings", "Settings", "gear"],
+              ] as Array<[Tab, string, IconName]>
+            ).map(([t, label, icon]) => {
               const active = tab === t;
               return (
-                <Pressable key={t} onPress={() => setTab(t)} style={{ flex: 1, alignItems: "center", paddingVertical: 6 }}>
-                  <Text style={{ color: active ? C.accent : C.dim, fontSize: 12.5, fontWeight: active ? "700" : "500" }}>
+                <Pressable key={t} onPress={() => setTab(t)} style={{ flex: 1, alignItems: "center", gap: 4, paddingVertical: 5 }}>
+                  <Icon name={icon} size={21} color={active ? C.accent : C.dim} />
+                  <Txt
+                    style={{
+                      color: active ? C.accent : C.dim,
+                      fontSize: 10.5,
+                      fontWeight: active ? "700" : "600",
+                      letterSpacing: 0.2,
+                    }}
+                  >
                     {label}
-                  </Text>
+                  </Txt>
                 </Pressable>
               );
             })}

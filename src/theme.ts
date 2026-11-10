@@ -1,5 +1,6 @@
 // Tema Yuika mobile — selaras studio (canvas #1a1a1a, surface #212121,
-// aksen #007cf7). Semua layar remote memakai token ini.
+// aksen #007cf7). Semua layar remote memakai token ini. Font global Nunito
+// (assets/fonts, mockup 2025-11) — weight dipetakan lewat F di komponen Txt.
 export const C = {
   canvas: "#1a1a1a",
   surface: "#212121",
@@ -23,4 +24,15 @@ export const R = {
   chip: 999,
   input: 10,
   bubble: 14,
+};
+
+/** Nunito per weight (dipakai komponen Txt — jangan hard-code fontFamily). */
+export const F: Record<string, string> = {
+  "400": "Nunito-Regular",
+  normal: "Nunito-Regular",
+  "500": "Nunito-SemiBold",
+  "600": "Nunito-SemiBold",
+  "700": "Nunito-Bold",
+  bold: "Nunito-Bold",
+  "800": "Nunito-ExtraBold",
 };

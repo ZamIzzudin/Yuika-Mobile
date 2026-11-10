@@ -1,30 +1,32 @@
 // Yuika mobile — remote mission control untuk host studio/desktop.
 // Boot → login portal → daftar host → RemoteProvider (Projects/Screens/
-// Settings, lihat src/remote/RemoteProvider.tsx).
+// Settings, lihat src/remote/RemoteProvider.tsx). Mockup 2025-11: Nunito,
+// icon SVG Lucide, toast floating (error), semua konten dalam SafeArea.
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   Pressable,
   RefreshControl,
-  StyleSheet,
-  Text,
   View,
 } from "react-native";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFonts } from "expo-font";
 
+import { Icon, type IconName } from "./src/components/Icon";
 import { RemoteProvider } from "./src/remote/RemoteProvider";
 import { DEFAULT_PORTAL, loginWithPortal, PortalError } from "./src/portal";
 import { listHosts, RelayError, type HostEntry } from "./src/relay";
 import { clearSession, loadSession, saveSession, type Session } from "./src/store";
 import { C } from "./src/theme";
+import { EmptyState, ToastProvider, Txt, useToast } from "./src/ui";
 
-const KIND_ICON: Record<string, string> = {
-  desktop: "🖥",
-  web: "🌐",
-  mobile: "📱",
+const KIND_ICON: Record<string, IconName> = {
+  desktop: "monitor",
+  web: "globe",
+  mobile: "monitor",
 };
 
 function relative(ts: number): string {
@@ -42,11 +44,18 @@ type Screen =
   | { name: "remote"; session: Session; host: HostEntry };
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    "Nunito-Regular": require("./assets/fonts/Nunito-Regular.ttf"),
+    "Nunito-SemiBold": require("./assets/fonts/Nunito-SemiBold.ttf"),
+    "Nunito-Bold": require("./assets/fonts/Nunito-Bold.ttf"),
+    "Nunito-ExtraBold": require("./assets/fonts/Nunito-ExtraBold.ttf"),
+  });
   const [screen, setScreen] = useState<Screen>({ name: "boot" });
   const [signingIn, setSigningIn] = useState(false);
   const [hosts, setHosts] = useState<HostEntry[] | null>(null);
-  const [hostsError, setHostsError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
+  const toast = useToast();
 
   useEffect(() => {
     void (async () => {
@@ -57,15 +66,14 @@ export default function App() {
 
   const refresh = useCallback(async (session: Session) => {
     setRefreshing(true);
-    setHostsError(null);
     try {
       setHosts(await listHosts(session.relayUrl, session.device));
     } catch (e) {
-      setHostsError(e instanceof RelayError ? e.message : "relay error");
+      toast(e instanceof RelayError ? e.message : "relay error", "danger");
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [toast]);
 
   const session = screen.name === "hosts" ? screen.session : null;
   useEffect(() => {
@@ -88,8 +96,7 @@ export default function App() {
       setHosts(null);
       setScreen({ name: "hosts", session });
     } catch (e) {
-      const msg = e instanceof PortalError ? e.message : "sign-in failed";
-      Alert.alert("Sign in", msg);
+      toast(e instanceof PortalError ? e.message : "sign-in failed", "danger");
     } finally {
       setSigningIn(false);
     }
@@ -101,7 +108,7 @@ export default function App() {
     setScreen({ name: "login" });
   }
 
-  if (screen.name === "boot") {
+  if (!fontsLoaded || screen.name === "boot") {
     return (
       <View style={[styles.root, styles.center]}>
         <StatusBar style="light" />
@@ -113,18 +120,15 @@ export default function App() {
 
   if (screen.name === "login") {
     return (
-      <View style={[styles.root, styles.center]}>
+      <View style={[styles.root, styles.center, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <StatusBar style="light" />
         <Image source={require("./assets/logo.png")} style={styles.logoLogin} resizeMode="contain" />
-        <Text style={styles.tagline}>Studio Persona for Agentic AI</Text>
+        <Txt style={styles.tagline}>Studio Persona for Agentic AI</Txt>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Sign in with the Yuika portal</Text>
-          <Text style={styles.cardBody}>
-            Your phone becomes mission control for every host signed in with this account: deployed studios, desktop
-            hosts, projects, tasks, team, terminals, and live screens.
-          </Text>
+          <Txt style={styles.cardTitle}>Sign in with the Yuika portal</Txt>
+          <Txt style={styles.cardBody}>Manage your host studio and make sure everything fine from here.</Txt>
           <Pressable style={[styles.button, signingIn && styles.buttonDisabled]} disabled={signingIn} onPress={() => void signIn()}>
-            {signingIn ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign in</Text>}
+            {signingIn ? <ActivityIndicator color="#fff" /> : <Txt style={styles.buttonText}>Sign in</Txt>}
           </Pressable>
         </View>
       </View>
@@ -148,27 +152,22 @@ export default function App() {
 
   // hosts
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar style="light" />
       <View style={styles.header}>
         <Image source={require("./assets/logo.png")} style={styles.logoHeader} resizeMode="contain" />
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Hosts</Text>
-          <Text style={styles.headerSub} numberOfLines={1}>
+          <Txt style={styles.headerTitle}>Hosts</Txt>
+          <Txt style={styles.headerSub} numberOfLines={1}>
             {session?.email}
-          </Text>
+          </Txt>
         </View>
         <Pressable onPress={() => void signOut()} hitSlop={8}>
-          <Text style={styles.signOut}>Sign out</Text>
+          <Txt style={styles.signOut}>Sign out</Txt>
         </Pressable>
       </View>
-      {hostsError ? (
-        <View style={styles.errorBox}>
-          <Text style={styles.errorText}>{hostsError}</Text>
-        </View>
-      ) : null}
       <FlatList
-        contentContainerStyle={styles.list}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24, gap: 10 }}
         data={hosts ?? []}
         keyExtractor={(h) => h.deviceId}
         refreshControl={
@@ -182,24 +181,22 @@ export default function App() {
         }
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => setScreen({ name: "remote", session: screen.session, host: item })}>
-            <Text style={styles.rowIcon}>{KIND_ICON[item.kind] ?? "🔌"}</Text>
+            <Icon name={KIND_ICON[item.kind] ?? "monitor"} size={20} color={C.dim} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.rowName}>{item.name}</Text>
-              <Text style={styles.rowMeta}>
+              <Txt style={styles.rowName}>{item.name}</Txt>
+              <Txt style={styles.rowMeta}>
                 {item.kind} · seen {relative(item.lastSeen)}
-              </Text>
+              </Txt>
             </View>
-            <Text style={styles.rowOpen}>Open</Text>
+            <Txt style={styles.rowOpen}>Open</Txt>
           </Pressable>
         )}
         ListEmptyComponent={
           refreshing ? undefined : (
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>No hosts online</Text>
-              <Text style={styles.emptyBody}>
-                Sign in to a Yuika studio or desktop host with this account and it will appear here.
-              </Text>
-            </View>
+            <EmptyState
+              title="No hosts online"
+              body="Sign in to a Yuika studio or desktop host with this account and it will appear here."
+            />
           )
         }
       />
@@ -207,8 +204,18 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.canvas, padding: 20 },
+export function AppRoot() {
+  return (
+    <SafeAreaProvider>
+      <ToastProvider>
+        <App />
+      </ToastProvider>
+    </SafeAreaProvider>
+  );
+}
+
+const styles = {
+  root: { flex: 1, backgroundColor: C.canvas, paddingHorizontal: 20 },
   center: { alignItems: "center", justifyContent: "center" },
   logoBoot: { width: 72, height: 72, borderRadius: 18 },
   logoLogin: { width: 88, height: 88, borderRadius: 22, marginBottom: 6 },
@@ -224,17 +231,16 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 360,
     gap: 10,
-  },
-  cardTitle: { color: C.text, fontSize: 15, fontWeight: "600" },
-  cardBody: { color: C.dim, fontSize: 12.5, lineHeight: 18 },
+  } as object,
+  cardTitle: { color: C.text, fontSize: 15, fontWeight: "600", textAlign: "center" },
+  cardBody: { color: C.dim, fontSize: 12.5, lineHeight: 18, textAlign: "center" },
   button: { backgroundColor: C.accent, borderRadius: 8, paddingVertical: 12, alignItems: "center", marginTop: 6 },
-  buttonDisabled: { opacity: 0.6 },
+  buttonDisabled: { opacity: 0.6 } as object,
   buttonText: { color: "#fff", fontSize: 14, fontWeight: "600" },
   header: { flexDirection: "row", alignItems: "center", paddingTop: 24, paddingBottom: 12 },
   headerTitle: { color: C.text, fontSize: 24, fontWeight: "700" },
   headerSub: { color: C.dim, fontSize: 12.5, marginTop: 2 },
   signOut: { color: C.dim, fontSize: 13 },
-  list: { paddingBottom: 24 },
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -245,23 +251,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    marginBottom: 10,
-  },
-  rowIcon: { fontSize: 22 },
+  } as object,
   rowName: { color: C.text, fontSize: 14.5, fontWeight: "600" },
   rowMeta: { color: C.dim, fontSize: 12, marginTop: 2 },
   rowOpen: { color: C.accent, fontSize: 13, fontWeight: "600" },
-  errorBox: {
-    backgroundColor: "#2a1a1a",
-    borderColor: "#5c2a2a",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 10,
-  },
-  errorText: { color: C.danger, fontSize: 12.5 },
-  empty: { alignItems: "center", paddingVertical: 48, gap: 6 },
-  emptyTitle: { color: C.text, fontSize: 15, fontWeight: "600" },
-  emptyBody: { color: C.dim, fontSize: 12.5, textAlign: "center", maxWidth: 280, lineHeight: 18 },
-});
+} as const;
+
+// registerRootComponent mengganti export default — pastikan AppRoot dipakai.

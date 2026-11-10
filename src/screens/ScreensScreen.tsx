@@ -1,6 +1,6 @@
 // Tab Screens (root): semua live browser host, lintas project.
 import React from "react";
-import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
 import { Mascot } from "../components/Mascot";
 import { SkeletonList } from "../components/Skeleton";
@@ -8,12 +8,17 @@ import { personaMeta } from "../personas";
 import { useRemote } from "../remote/RemoteProvider";
 import type { ScreenInfo } from "../relay";
 import { C } from "../theme";
-import { Card, Chip, EmptyState, ErrorBox } from "../ui";
+import { Card, Chip, EmptyState, Txt, useToast } from "../ui";
 
 export function ScreensScreen() {
   const { rs, push, subscribe } = useRemote();
   const [screens, setScreens] = React.useState<ScreenInfo[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const toast = useToast();
+
+  React.useEffect(() => {
+    if (error) toast(error, "danger");
+  }, [error, toast]);
   const [refreshing, setRefreshing] = React.useState(false);
 
   const load = React.useCallback(async () => {
@@ -48,7 +53,6 @@ export function ScreensScreen() {
         />
       }
     >
-      {error ? <ErrorBox msg={error} /> : null}
       {screens === null ? (
         <SkeletonList rows={2} />
       ) : (
@@ -64,13 +68,13 @@ export function ScreensScreen() {
                 >
                   <Mascot personaId={s.personaId} size={40} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: C.text, fontSize: 14.5, fontWeight: "600" }} numberOfLines={1}>
+                    <Txt style={{ color: C.text, fontSize: 14.5, fontWeight: "600" }} numberOfLines={1}>
                       {s.title || "Untitled page"}
-                    </Text>
-                    <Text style={{ color: C.dim, fontSize: 12 }} numberOfLines={1}>
+                    </Txt>
+                    <Txt style={{ color: C.dim, fontSize: 12 }} numberOfLines={1}>
                       {persona.name}
                       {project ? ` · ${project}` : ""} · {s.url || "no url"}
-                    </Text>
+                    </Txt>
                   </View>
                   <Chip label={s.status} tone={s.status === "running" ? "ok" : "dim"} />
                 </Pressable>

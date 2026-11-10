@@ -1,17 +1,18 @@
-// Project mission control: tab Chat (sesi) / Tasks / Files / Team / Activity /
-// Terminal / Browser — semua via aksi v1.2 ber-rid. Setiap tab fetch saat
-// mount + pull-to-refresh; skeleton saat loading.
+// Project mission control: FAB nav (mockup 2025-11) — tab Chat/Tasks/Files/
+// Team/Activity/Terminal/Browser via navcard overlay; new-chat FAB di tab
+// Chat. Semua via aksi v1.2 ber-rid. Setiap tab fetch saat mount +
+// pull-to-refresh; skeleton saat loading; error -> toast floating.
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  FlatList,
   Pressable,
   RefreshControl,
   ScrollView,
-  Text,
   TextInput,
   View,
 } from "react-native";
 
+import { FabNav, type FabNavItem } from "../components/FabNav";
+import { Icon, type IconName } from "../components/Icon";
 import { Mascot } from "../components/Mascot";
 import { SkeletonList } from "../components/Skeleton";
 import { personaMeta } from "../personas";
@@ -27,35 +28,55 @@ import {
   type TaskNode,
 } from "../relay";
 import { C } from "../theme";
-import { Btn, Card, Chip, EmptyState, ErrorBox, Sheet } from "../ui";
+import { Btn, Card, Chip, EmptyState, Sheet, Txt, useToast } from "../ui";
 
 const TABS = ["Chat", "Tasks", "Files", "Team", "Activity", "Terminal", "Browser"] as const;
 type Tab = (typeof TABS)[number];
 
+const NAV_ITEMS: FabNavItem[] = [
+  { key: "Chat", label: "Chat", icon: "message" },
+  { key: "Tasks", label: "Tasks", icon: "list" },
+  { key: "Files", label: "Files", icon: "folder" },
+  { key: "Team", label: "Team", icon: "users" },
+  { key: "Activity", label: "Activity", icon: "activity" },
+  { key: "Terminal", label: "Terminal", icon: "terminal" },
+  { key: "Browser", label: "Browser", icon: "globe" },
+];
+
 export function ProjectScreen({ projectId, projectName }: { projectId: string; projectName: string }) {
   const [tab, setTab] = useState<Tab>("Chat");
+  const [newOpen, setNewOpen] = useState(false);
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {TABS.map((t) => (
-            <Chip key={t} label={t} tone="accent" active={tab === t} onPress={() => setTab(t)} />
-          ))}
-        </ScrollView>
+      <View style={{ flex: 1 }}>
+        {tab === "Chat" ? <ChatTab projectId={projectId} newOpen={newOpen} setNewOpen={setNewOpen} /> : null}
+        {tab === "Tasks" ? <TasksTab projectId={projectId} /> : null}
+        {tab === "Files" ? <FilesTab projectId={projectId} /> : null}
+        {tab === "Team" ? <TeamTab projectId={projectId} /> : null}
+        {tab === "Activity" ? <ActivityTab projectId={projectId} /> : null}
+        {tab === "Terminal" ? <TerminalTab projectId={projectId} /> : null}
+        {tab === "Browser" ? <BrowserTab projectId={projectId} /> : null}
       </View>
-      {tab === "Chat" ? <ChatTab projectId={projectId} /> : null}
-      {tab === "Tasks" ? <TasksTab projectId={projectId} /> : null}
-      {tab === "Files" ? <FilesTab projectId={projectId} /> : null}
-      {tab === "Team" ? <TeamTab projectId={projectId} /> : null}
-      {tab === "Activity" ? <ActivityTab projectId={projectId} /> : null}
-      {tab === "Terminal" ? <TerminalTab projectId={projectId} /> : null}
-      {tab === "Browser" ? <BrowserTab projectId={projectId} /> : null}
-      <Text style={{ color: C.faint, fontSize: 11, textAlign: "center", paddingBottom: 8 }}>{projectName}</Text>
+      <Txt style={{ color: C.faint, fontSize: 11, textAlign: "center", paddingBottom: 8 }}>{projectName}</Txt>
+      <FabNav
+        items={NAV_ITEMS}
+        active={tab}
+        onPick={(k) => setTab(k as Tab)}
+        actionIcon={tab === "Chat" ? "plus" : undefined}
+        onAction={tab === "Chat" ? () => setNewOpen(true) : undefined}
+      />
     </View>
   );
 }
 
 // ── util bersama ────────────────────────────────────────────────────────
+
+function useErrorToast(error: string | null): void {
+  const toast = useToast();
+  useEffect(() => {
+    if (error) toast(error, "danger");
+  }, [error, toast]);
+}
 
 function useAsync<T>(run: () => Promise<T>, deps: React.DependencyList): {
   data: T | null;
@@ -97,7 +118,7 @@ function PullList<T>({
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ padding: 16, paddingBottom: 24, gap: 10 }}
+      contentContainerStyle={{ padding: 16, paddingBottom: 140, gap: 10 }}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -114,11 +135,10 @@ function PullList<T>({
   );
 }
 
-// ── Chat tab: sesi project + buat sesi baru ─────────────────────────────
+// ── Chat tab: sesi project + buat sesi baru (FAB plus) ─────────────────
 
-function ChatTab({ projectId }: { projectId: string }) {
+function ChatTab({ projectId, newOpen, setNewOpen }: { projectId: string; newOpen: boolean; setNewOpen: (v: boolean) => void }) {
   const { rs, push, subscribe } = useRemote();
-  const [newOpen, setNewOpen] = useState(false);
   const [personas, setPersonas] = useState<PersonaLite[] | null>(null);
   const [creating, setCreating] = useState<string | null>(null);
 
@@ -129,8 +149,9 @@ function ChatTab({ projectId }: { projectId: string }) {
         .then((e) => e.sessions),
     [projectId],
   );
+  useErrorToast(error);
 
-  // fix #4 (stale): refresh sesi tiap turn selesai di sesi mana pun.
+  // refresh sesi tiap turn selesai di sesi mana pun.
   useEffect(
     () =>
       subscribe((e) => {
@@ -166,8 +187,6 @@ function ChatTab({ projectId }: { projectId: string }) {
   return (
     <>
       <PullList reload={reload} loading={loading}>
-        {error ? <ErrorBox msg={error} /> : null}
-        <Btn label="+ New chat" onPress={() => setNewOpen(true)} />
         {(data ?? []).map((s) => (
           <Card key={s.sessionId}>
             <Pressable
@@ -178,16 +197,16 @@ function ChatTab({ projectId }: { projectId: string }) {
             >
               <Mascot personaId={s.personaId} size={38} />
               <View style={{ flex: 1 }}>
-                <Text style={{ color: C.text, fontSize: 14.5, fontWeight: "600" }} numberOfLines={1}>
+                <Txt style={{ color: C.text, fontSize: 14.5, fontWeight: "600" }} numberOfLines={1}>
                   {s.title || personaMeta(s.personaId).name}
-                </Text>
-                <Text style={{ color: C.dim, fontSize: 12 }}>{personaMeta(s.personaId).name}</Text>
+                </Txt>
+                <Txt style={{ color: C.dim, fontSize: 12 }}>{personaMeta(s.personaId).name}</Txt>
               </View>
-              <Text style={{ color: C.faint, fontSize: 11 }}>
+              <Txt style={{ color: C.faint, fontSize: 11 }}>
                 {new Date(s.updatedAt).toLocaleDateString() === new Date().toLocaleDateString()
                   ? new Date(s.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
                   : new Date(s.updatedAt).toLocaleDateString()}
-              </Text>
+              </Txt>
             </Pressable>
           </Card>
         ))}
@@ -218,12 +237,12 @@ function ChatTab({ projectId }: { projectId: string }) {
             >
               <Mascot personaId={p.id} size={36} />
               <View style={{ flex: 1 }}>
-                <Text style={{ color: C.text, fontSize: 14.5, fontWeight: "600" }}>{p.name}</Text>
-                <Text style={{ color: C.dim, fontSize: 12 }}>{p.model ?? "default model"}</Text>
+                <Txt style={{ color: C.text, fontSize: 14.5, fontWeight: "600" }}>{p.name}</Txt>
+                <Txt style={{ color: C.dim, fontSize: 12 }}>{p.model ?? "default model"}</Txt>
               </View>
-              <Text style={{ color: creating === p.id ? C.dim : C.accent, fontSize: 12.5, fontWeight: "700" }}>
+              <Txt style={{ color: creating === p.id ? C.dim : C.accent, fontSize: 12.5, fontWeight: "700" }}>
                 {creating === p.id ? "Opening…" : "Start"}
-              </Text>
+              </Txt>
             </Pressable>
           ))
         )}
@@ -266,9 +285,9 @@ function TaskRow({ node, depth }: { node: TaskNode; depth: number }) {
               node.status === "done" ? C.ok : node.status === "doing" ? C.accent : node.status === "review" ? C.warn : C.faint,
           }}
         />
-        <Text style={{ color: node.status === "done" ? C.dim : C.text, fontSize: 13.5, flex: 1 }} numberOfLines={2}>
+        <Txt style={{ color: node.status === "done" ? C.dim : C.text, fontSize: 13.5, flex: 1 }} numberOfLines={2}>
           {node.title}
-        </Text>
+        </Txt>
         {node.assignee ? <Mascot personaId={node.assignee} size={20} /> : null}
       </View>
       {node.children.map((c) => (
@@ -284,14 +303,14 @@ function TasksTab({ projectId }: { projectId: string }) {
     () => rs.request<{ ev: "project.tasks"; tree: TaskNode[] }>("project.tasks", { projectId }).then((e) => e.tree),
     [projectId],
   );
+  useErrorToast(error);
   const flatCount = useMemo(() => {
     const n = (t: TaskNode): number => 1 + t.children.reduce((a, c) => a + n(c), 0);
     return (data ?? []).reduce((a, t) => a + n(t), 0);
   }, [data]);
   return (
     <PullList reload={reload} loading={loading}>
-      {error ? <ErrorBox msg={error} /> : null}
-      {data && data.length > 0 ? <Text style={{ color: C.dim, fontSize: 12.5 }}>{flatCount} tasks</Text> : null}
+      {data && data.length > 0 ? <Txt style={{ color: C.dim, fontSize: 12.5 }}>{flatCount} tasks</Txt> : null}
       {(data ?? []).map((t) => (
         <TaskRow key={t.id} node={t} depth={0} />
       ))}
@@ -300,12 +319,19 @@ function TasksTab({ projectId }: { projectId: string }) {
   );
 }
 
-// ── Files tab ───────────────────────────────────────────────────────────
+// ── Files tab: typed icons (file-code/file-text/file), chevron folder ───
 
 function humanSize(n: number): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function fileIcon(name: string): IconName {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  if (["ts", "tsx", "js", "jsx", "mjs", "cjs", "json", "css", "sh", "py", "rs", "go", "yml", "yaml", "toml"].includes(ext)) return "file-code";
+  if (["md", "mdx", "txt", "log"].includes(ext)) return "file-text";
+  return "file";
 }
 
 function FileRow({ node, projectId, depth }: { node: FileNode; projectId: string; depth: number }) {
@@ -324,13 +350,20 @@ function FileRow({ node, projectId, depth }: { node: FileNode; projectId: string
           paddingVertical: 7,
         }}
       >
-        <Text style={{ color: node.dir ? C.warn : C.dim, fontSize: 13, width: 16 }}>
-          {node.dir ? (open ? "▾" : "▸") : "·"}
-        </Text>
-        <Text style={{ color: C.text, fontSize: 13.5, flex: 1, fontFamily: node.dir ? undefined : "monospace" }} numberOfLines={1}>
+        <View style={{ width: 16, alignItems: "center", justifyContent: "center" }}>
+          {node.dir ? (
+            <Icon name={open ? "chev-d" : "chev-r"} size={16} color={C.warn} />
+          ) : (
+            <Icon name={fileIcon(node.name)} size={16} color={C.dim} />
+          )}
+        </View>
+        <Txt
+          style={{ color: C.text, fontSize: 13.5, flex: 1, fontFamily: node.dir ? undefined : "monospace" }}
+          numberOfLines={1}
+        >
           {node.name}
-        </Text>
-        {!node.dir ? <Text style={{ color: C.faint, fontSize: 11 }}>{humanSize(node.size)}</Text> : null}
+        </Txt>
+        {!node.dir ? <Txt style={{ color: C.faint, fontSize: 11 }}>{humanSize(node.size)}</Txt> : null}
       </Pressable>
       {open && children.length > 0 ? (
         <View
@@ -354,9 +387,9 @@ function FilesTab({ projectId }: { projectId: string }) {
     () => rs.request<{ ev: "project.files"; tree: FileNode[] }>("project.files", { projectId }).then((e) => e.tree),
     [projectId],
   );
+  useErrorToast(error);
   return (
     <PullList reload={reload} loading={loading}>
-      {error ? <ErrorBox msg={error} /> : null}
       {(data ?? []).map((n) => (
         <FileRow key={n.relPath} node={n} projectId={projectId} depth={0} />
       ))}
@@ -383,19 +416,19 @@ function TeamTab({ projectId }: { projectId: string }) {
     },
     [projectId],
   );
+  useErrorToast(error);
   return (
     <PullList reload={reload} loading={loading}>
-      {error ? <ErrorBox msg={error} /> : null}
       {data && data.roster.length > 0 ? (
         <>
-          <Text style={{ color: C.dim, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.2 }}>Team</Text>
+          <Txt style={{ color: C.dim, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.2 }}>Team</Txt>
           {data.roster.map((r) => (
             <Card key={r.personaId}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 <Mascot personaId={r.personaId} size={40} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.text, fontSize: 14.5, fontWeight: "600" }}>{personaMeta(r.personaId).name}</Text>
-                  <Text style={{ color: C.dim, fontSize: 12 }}>{r.role}</Text>
+                  <Txt style={{ color: C.text, fontSize: 14.5, fontWeight: "600" }}>{personaMeta(r.personaId).name}</Txt>
+                  <Txt style={{ color: C.dim, fontSize: 12 }}>{r.role}</Txt>
                 </View>
               </View>
             </Card>
@@ -404,33 +437,33 @@ function TeamTab({ projectId }: { projectId: string }) {
       ) : null}
       {data && data.delegations.length > 0 ? (
         <>
-          <Text style={{ color: C.dim, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.2, marginTop: 8 }}>
+          <Txt style={{ color: C.dim, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.2, marginTop: 8 }}>
             Delegations
-          </Text>
+          </Txt>
           {data.delegations.map((d) => (
             <Card key={d.id}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                 <Mascot personaId={d.personaId} size={32} />
-                <Text style={{ color: C.text, fontSize: 13.5, fontWeight: "600", flex: 1 }} numberOfLines={2}>
+                <Txt style={{ color: C.text, fontSize: 13.5, fontWeight: "600", flex: 1 }} numberOfLines={2}>
                   {d.goal}
-                </Text>
+                </Txt>
                 <Chip label={d.status} tone={DELEGATION_TONE[d.status] ?? "dim"} />
               </View>
               {d.summary ? (
-                <Text style={{ color: C.dim, fontSize: 12, marginTop: 8, lineHeight: 17 }} numberOfLines={3}>
+                <Txt style={{ color: C.dim, fontSize: 12, marginTop: 8, lineHeight: 17 }} numberOfLines={3}>
                   {d.summary}
-                </Text>
+                </Txt>
               ) : null}
-              {d.error ? <Text style={{ color: C.danger, fontSize: 12, marginTop: 8 }} numberOfLines={3}>{d.error}</Text> : null}
+              {d.error ? <Txt style={{ color: C.danger, fontSize: 12, marginTop: 8 }} numberOfLines={3}>{d.error}</Txt> : null}
               {d.status === "running" && d.childSessionId ? (
-                <Text
+                <Txt
                   onPress={() =>
                     push({ v: "chat", sessionId: d.childSessionId, personaId: d.personaId, title: `Delegation: ${d.goal}` })
                   }
                   style={{ color: C.accent, fontSize: 12.5, fontWeight: "700", marginTop: 8 }}
                 >
                   Open live session →
-                </Text>
+                </Txt>
               ) : null}
             </Card>
           ))}
@@ -443,19 +476,19 @@ function TeamTab({ projectId }: { projectId: string }) {
   );
 }
 
-// ── Activity tab ────────────────────────────────────────────────────────
+// ── Activity tab: ikon kind SVG, error merah × ──────────────────────────
 
-const KIND_ICON: Record<string, string> = {
-  tool: "⚙",
-  delegation: "→",
-  approval: "!",
-  screen: "▣",
-  vault: "◆",
-  qa: "✓",
-  message: "»",
-  task: "✓",
-  session: "»",
-  file: "·",
+const KIND_ICONS: Record<string, IconName> = {
+  tool: "wrench",
+  delegation: "arrow-r",
+  approval: "alert",
+  screen: "monitor",
+  vault: "shield",
+  qa: "check",
+  message: "message",
+  task: "check-c",
+  session: "message",
+  file: "file",
 };
 
 function ActivityTab({ projectId }: { projectId: string }) {
@@ -467,9 +500,9 @@ function ActivityTab({ projectId }: { projectId: string }) {
         .then((e) => e.entries),
     [projectId],
   );
+  useErrorToast(error);
   return (
     <PullList reload={reload} loading={loading}>
-      {error ? <ErrorBox msg={error} /> : null}
       {(data ?? []).map((a, i) => (
         <View
           key={`${a.at}-${i}`}
@@ -481,21 +514,22 @@ function ActivityTab({ projectId }: { projectId: string }) {
             borderWidth: 1,
             borderRadius: 10,
             padding: 11,
+            alignItems: "flex-start",
           }}
         >
-          <Text style={{ color: a.isError ? C.danger : C.faint, fontSize: 14, width: 18 }}>
-            {a.isError ? "×" : (KIND_ICON[a.kind] ?? "·")}
-          </Text>
+          <View style={{ width: 20, alignItems: "center", justifyContent: "center", marginTop: 1 }}>
+            <Icon name={a.isError ? "x" : (KIND_ICONS[a.kind] ?? "file")} size={16} color={a.isError ? C.danger : C.faint} />
+          </View>
           <View style={{ flex: 1 }}>
-            <Text
+            <Txt
               style={{ color: a.isError ? C.danger : C.text, fontSize: 12.5, lineHeight: 17, fontFamily: "monospace" }}
               numberOfLines={3}
             >
               {a.label}
-            </Text>
-            <Text style={{ color: C.faint, fontSize: 11, marginTop: 3 }}>
+            </Txt>
+            <Txt style={{ color: C.faint, fontSize: 11, marginTop: 6 }}>
               {a.personaId ? personaMeta(a.personaId).name : a.kind} · {new Date(a.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </Text>
+            </Txt>
           </View>
         </View>
       ))}
@@ -508,17 +542,16 @@ function ActivityTab({ projectId }: { projectId: string }) {
 
 function TerminalTab({ projectId }: { projectId: string }) {
   const { rs, subscribe } = useRemote();
+  const toast = useToast();
   const [attached, setAttached] = useState<{ id: string; replay: string; exited: boolean } | null>(null);
   const [buffer, setBuffer] = useState("");
   const [input, setInput] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const scrollRef = React.useRef<React.ComponentRef<typeof ScrollView>>(null);
 
   async function open(): Promise<void> {
     if (busy) return;
     setBusy(true);
-    setError(null);
     try {
       const ev = await rs.request<{ ev: "terminal.state"; id: string; replay: string; info: { exited: boolean } }>(
         "terminal.open",
@@ -527,7 +560,7 @@ function TerminalTab({ projectId }: { projectId: string }) {
       setAttached({ id: ev.id, replay: ev.replay, exited: ev.info.exited });
       setBuffer(ev.replay);
     } catch (e) {
-      setError(e instanceof RelayError ? e.message : "Cannot open terminal");
+      toast(e instanceof RelayError ? e.message : "Cannot open terminal", "danger");
     } finally {
       setBusy(false);
     }
@@ -561,12 +594,11 @@ function TerminalTab({ projectId }: { projectId: string }) {
   if (!attached) {
     return (
       <View style={{ flex: 1, padding: 16, gap: 10 }}>
-        {error ? <ErrorBox msg={error} /> : null}
         <Card>
-          <Text style={{ color: C.text, fontSize: 14.5, fontWeight: "600" }}>Project terminal</Text>
-          <Text style={{ color: C.dim, fontSize: 12.5, marginTop: 6, lineHeight: 18 }}>
+          <Txt style={{ color: C.text, fontSize: 14.5, fontWeight: "600" }}>Project terminal</Txt>
+          <Txt style={{ color: C.dim, fontSize: 12.5, marginTop: 6, lineHeight: 18 }}>
             Opens a shell at this project workspace on the host. Shared with the studio: detaching on your phone keeps it alive.
-          </Text>
+          </Txt>
           <View style={{ marginTop: 12 }}>
             <Btn label={busy ? "Opening…" : "Open terminal"} onPress={() => void open()} disabled={busy} />
           </View>
@@ -576,12 +608,12 @@ function TerminalTab({ projectId }: { projectId: string }) {
   }
 
   return (
-    <View style={{ flex: 1, padding: 12, gap: 8 }}>
+    <View style={{ flex: 1, padding: 12, gap: 8, paddingBottom: 150 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <Chip label={attached.exited ? "exited" : "live"} tone={attached.exited ? "danger" : "ok"} />
-        <Text style={{ color: C.faint, fontSize: 11, flex: 1 }} numberOfLines={1}>
+        <Chip label={attached.exited ? "Exited" : "Live"} tone={attached.exited ? "danger" : "ok"} />
+        <Txt style={{ color: C.faint, fontSize: 11, flex: 1, textAlign: "center" }} numberOfLines={1}>
           {attached.id}
-        </Text>
+        </Txt>
         {attached.exited ? (
           <Btn label="Reopen" small outline onPress={() => void open()} />
         ) : (
@@ -594,10 +626,10 @@ function TerminalTab({ projectId }: { projectId: string }) {
         contentContainerStyle={{ padding: 10 }}
         onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
       >
-        <Text style={{ color: "#d7e3f4", fontSize: 12, lineHeight: 17, fontFamily: "monospace" }}>{buffer}</Text>
+        <Txt style={{ color: "#d7e3f4", fontSize: 12, lineHeight: 17, fontFamily: "monospace" }}>{buffer}</Txt>
       </ScrollView>
       {!attached.exited ? (
-        <View style={{ flexDirection: "row", gap: 8 }}>
+        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
           <TextInput
             value={input}
             onChangeText={setInput}
@@ -621,14 +653,12 @@ function TerminalTab({ projectId }: { projectId: string }) {
             onSubmitEditing={sendInput}
             returnKeyType="send"
           />
-          <Btn label="Run" small onPress={sendInput} disabled={!input} />
+          <Btn icon="send" onPress={sendInput} disabled={!input} />
         </View>
       ) : null}
     </View>
   );
 }
-
-// (TextInput sudah diimpor di atas.)
 
 // ── Browser tab: screen project ini ─────────────────────────────────────
 
@@ -641,9 +671,9 @@ function BrowserTab({ projectId }: { projectId: string }) {
     },
     [projectId],
   );
+  useErrorToast(error);
   return (
     <PullList reload={reload} loading={loading}>
-      {error ? <ErrorBox msg={error} /> : null}
       {(data ?? []).map((s) => (
         <Card key={s.key}>
           <Pressable
@@ -652,12 +682,12 @@ function BrowserTab({ projectId }: { projectId: string }) {
           >
             <Mascot personaId={s.personaId} size={38} />
             <View style={{ flex: 1 }}>
-              <Text style={{ color: C.text, fontSize: 14.5, fontWeight: "600" }} numberOfLines={1}>
+              <Txt style={{ color: C.text, fontSize: 14.5, fontWeight: "600" }} numberOfLines={1}>
                 {s.title || "Untitled page"}
-              </Text>
-              <Text style={{ color: C.dim, fontSize: 12 }} numberOfLines={1}>
+              </Txt>
+              <Txt style={{ color: C.dim, fontSize: 12 }} numberOfLines={1}>
                 {s.url || "no url"}
-              </Text>
+              </Txt>
             </View>
             <Chip label={s.status} tone={s.status === "running" ? "ok" : "dim"} />
           </Pressable>

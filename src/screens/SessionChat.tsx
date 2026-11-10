@@ -7,18 +7,18 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  Text,
   TextInput,
   View,
 } from "react-native";
 
+import { Icon } from "../components/Icon";
 import { Markdown } from "../components/Markdown";
 import { Mascot } from "../components/Mascot";
 import { personaMeta } from "../personas";
 import { useRemote } from "../remote/RemoteProvider";
 import { nextRid, type RemoteEvent, type TranscriptMsg } from "../relay";
 import { C, R } from "../theme";
-import { Chip } from "../ui";
+import { Chip, Txt } from "../ui";
 
 interface Bubble {
   key: string;
@@ -126,13 +126,13 @@ export function SessionChat({
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           <Mascot personaId={personaId} size={42} />
           <View style={{ flex: 1 }}>
-            <Text style={{ color: C.text, fontSize: 16, fontWeight: "700" }} numberOfLines={1}>
+            <Txt style={{ color: C.text, fontSize: 16, fontWeight: "700" }} numberOfLines={1}>
               {title || meta.name}
-            </Text>
-            <Text style={{ color: C.dim, fontSize: 12.5 }}>{meta.name}</Text>
+            </Txt>
+            <Txt style={{ color: C.dim, fontSize: 12.5 }}>{meta.name}</Txt>
           </View>
         </View>
-        <Text style={{ color: C.faint, fontSize: 12.5 }}>Loading transcript…</Text>
+        <Txt style={{ color: C.faint, fontSize: 12.5 }}>Loading transcript…</Txt>
       </View>
     );
   }
@@ -150,10 +150,10 @@ export function SessionChat({
       >
         <Mascot personaId={personaId} size={40} />
         <View style={{ flex: 1 }}>
-          <Text style={{ color: C.text, fontSize: 15.5, fontWeight: "700" }} numberOfLines={1}>
+          <Txt style={{ color: C.text, fontSize: 15.5, fontWeight: "700" }} numberOfLines={1}>
             {title || meta.name}
-          </Text>
-          <Text style={{ color: C.dim, fontSize: 12 }}>{meta.name}</Text>
+          </Txt>
+          <Txt style={{ color: C.dim, fontSize: 12 }}>{meta.name}</Txt>
         </View>
         {running ? (
           <Pressable
@@ -161,7 +161,7 @@ export function SessionChat({
             hitSlop={8}
             style={{ borderColor: C.danger, borderWidth: 1, borderRadius: R.chip, paddingHorizontal: 12, paddingVertical: 6 }}
           >
-            <Text style={{ color: C.danger, fontSize: 12.5, fontWeight: "700" }}>Stop</Text>
+            <Txt style={{ color: C.danger, fontSize: 12.5, fontWeight: "700" }}>Stop</Txt>
           </Pressable>
         ) : null}
       </View>
@@ -199,11 +199,11 @@ export function SessionChat({
                 paddingVertical: 6,
               }}
             >
-              <Text style={{ color: C.danger, fontSize: 11.5 }}>{item.text}</Text>
+              <Txt style={{ color: C.danger, fontSize: 11.5 }}>{item.text}</Txt>
             </View>
           ) : item.role === "user" ? (
             <View style={{ backgroundColor: C.accent, alignSelf: "flex-end", borderRadius: R.bubble, paddingHorizontal: 13, paddingVertical: 9, maxWidth: "86%" }}>
-              <Text style={{ color: "#fff", fontSize: 14, lineHeight: 19 }}>{item.text}</Text>
+              <Txt style={{ color: "#fff", fontSize: 14, lineHeight: 19 }}>{item.text}</Txt>
             </View>
           ) : (
             <View
@@ -242,9 +242,9 @@ export function SessionChat({
         }
         ListEmptyComponent={
           <View style={{ alignItems: "center", paddingVertical: 40 }}>
-            <Text style={{ color: C.dim, fontSize: 12.5, textAlign: "center", maxWidth: 260 }}>
-              No messages yet — say something to start this session.
-            </Text>
+            <Txt style={{ color: C.dim, fontSize: 12.5, textAlign: "center", maxWidth: 260 }}>
+              No Messages Yet
+            </Txt>
           </View>
         }
       />
@@ -272,15 +272,18 @@ export function SessionChat({
         <Pressable
           onPress={sendPrompt}
           disabled={!draft.trim() || running}
+          hitSlop={6}
           style={{
             backgroundColor: C.accent,
             borderRadius: R.bubble,
-            paddingHorizontal: 16,
-            paddingVertical: 11,
+            width: 38,
+            height: 38,
+            alignItems: "center",
+            justifyContent: "center",
             opacity: !draft.trim() || running ? 0.45 : 1,
           }}
         >
-          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "700" }}>Send</Text>
+          <Icon name="send" size={18} color="#fff" />
         </Pressable>
       </View>
     </KeyboardAvoidingView>

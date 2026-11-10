@@ -1,14 +1,14 @@
 // Live browser viewer: watch_screen (reply screen.state) + stream frame
 // (base64 jpeg). Unwatch saat unmount; reconnect host otomatis re-watch.
 import React, { useEffect, useRef, useState } from "react";
-import { Image, Text, View } from "react-native";
+import { Image, View } from "react-native";
 
 import { Mascot } from "../components/Mascot";
 import { personaMeta } from "../personas";
 import { useRemote } from "../remote/RemoteProvider";
 import { nextRid, RelayError, type RemoteEvent } from "../relay";
 import { C } from "../theme";
-import { Card, Chip, ErrorBox } from "../ui";
+import { Card, Chip, Txt, useToast } from "../ui";
 
 export function ScreenView({
   screenKey,
@@ -20,6 +20,7 @@ export function ScreenView({
   fallbackTitle?: string | null;
 }) {
   const { rs, subscribe } = useRemote();
+  const toast = useToast();
   const [frame, setFrame] = useState<string | null>(null);
   const [state, setState] = useState<{ status: string; title: string | null; url: string | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +38,11 @@ export function ScreenView({
         watched.current = true;
         setState({ status: e.status, title: e.title, url: e.url });
       })
-      .catch((e: Error) => setError(e instanceof RelayError ? e.message : "Cannot open screen"));
+      .catch((e: Error) => {
+        const msg = e instanceof RelayError ? e.message : "Cannot open screen";
+        setError(msg);
+        toast(msg, "danger");
+      });
     return () => {
       void rs.sendAction({ proto: 1, act: "unwatch_screen", rid: nextRid() });
     };
@@ -61,17 +66,15 @@ export function ScreenView({
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
         <Mascot personaId={personaId} size={36} />
         <View style={{ flex: 1 }}>
-          <Text style={{ color: C.text, fontSize: 14.5, fontWeight: "700" }} numberOfLines={1}>
+          <Txt style={{ color: C.text, fontSize: 14.5, fontWeight: "700" }} numberOfLines={1}>
             {title}
-          </Text>
-          <Text style={{ color: C.dim, fontSize: 12 }} numberOfLines={1}>
+          </Txt>
+          <Txt style={{ color: C.dim, fontSize: 12 }} numberOfLines={1}>
             {state?.url || "no url"} · {meta.name}
-          </Text>
+          </Txt>
         </View>
         <Chip label={state?.status ?? "loading"} tone={state?.status === "running" ? "ok" : "dim"} />
       </View>
-
-      {error ? <ErrorBox msg={error} /> : null}
 
       <Card style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0d0d0d" }}>
         {frame ? (
@@ -82,15 +85,15 @@ export function ScreenView({
           />
         ) : (
           <View style={{ alignItems: "center", gap: 8 }}>
-            <Text style={{ color: C.dim, fontSize: 13 }}>{error ? "Screen unavailable" : "Waiting for first frame…"}</Text>
-            <Text style={{ color: C.faint, fontSize: 11, fontFamily: "monospace" }}>{screenKey}</Text>
+            <Txt style={{ color: C.dim, fontSize: 13 }}>{error ? "Screen unavailable" : "Waiting for first frame…"}</Txt>
+            <Txt style={{ color: C.faint, fontSize: 11, fontFamily: "monospace" }}>{screenKey}</Txt>
           </View>
         )}
       </Card>
 
-      <Text style={{ color: C.faint, fontSize: 11, textAlign: "center" }}>
+      <Txt style={{ color: C.faint, fontSize: 11, textAlign: "center" }}>
         Live stream refreshes about once per second while the persona browses.
-      </Text>
+      </Txt>
     </View>
   );
 }

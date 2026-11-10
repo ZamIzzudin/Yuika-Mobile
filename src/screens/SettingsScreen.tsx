@@ -1,9 +1,12 @@
-// Tab Settings: mission-control remote settings.
+// Tab Settings (mockup 2025-11): landing menu 4 row (Limit & Usage, Provider
+// & Model, MCP, Actions) -> sub-screen dengan back chevron + FAB nav 4 item.
 // Modes (safety/hardcore) · Budget · Provider swap · Model routes · Usage ·
 // MCP · Danger (reset host, ketik RESET). TANPA sign-out host (host-only).
 import React, { useCallback, useEffect, useState } from "react";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
+import { FabNav, type FabNavItem } from "../components/FabNav";
+import { Icon } from "../components/Icon";
 import { Mascot } from "../components/Mascot";
 import { SkeletonList } from "../components/Skeleton";
 import { personaMeta } from "../personas";
@@ -16,20 +19,49 @@ import {
   type UsageSummaryLite,
 } from "../relay";
 import { C } from "../theme";
-import { Btn, Card, Chip, Field, SectionTitle } from "../ui";
+import { Btn, Card, Chip, Field, SectionTitle, Txt, useToast } from "../ui";
+
+type SubKey = "usage" | "provider" | "mcp" | "actions";
+type Sub = SubKey | null;
+
+const MENUS: Array<{ key: SubKey; label: string; desc: string; icon: "activity" | "wrench" | "plug" | "shield" }> = [
+  { key: "usage", label: "Limit & Usage", desc: "Caps, burn rate, spend by persona", icon: "activity" },
+  { key: "provider", label: "Provider & Model", desc: "Base URL, API key, routes per persona", icon: "wrench" },
+  { key: "mcp", label: "MCP", desc: "Trusted servers, tools, retry", icon: "plug" },
+  { key: "actions", label: "Actions", desc: "Approval mode, resets", icon: "shield" },
+];
+
+const NAV_ITEMS: FabNavItem[] = MENUS.map((m) => ({ key: m.key, label: m.label, icon: m.icon }));
+
+const SUB_TITLES: Record<SubKey, string> = {
+  usage: "Limit & Usage",
+  provider: "Provider & Model",
+  mcp: "MCP",
+  actions: "Actions",
+};
 
 function money(n: number, cur: string | null | undefined): string {
   if (cur === "IDR") return `Rp ${Math.round(n).toLocaleString("id-ID")}`;
   return `$${n.toFixed(n < 10 ? 4 : 2)}`;
 }
 
-export function SettingsScreen() {
+// ── data (fetch sekali di root, dipakai semua sub-page) ─────────────────
+
+interface SettingsData {
+  state: SettingsState | null;
+  usage: { summary: UsageSummaryLite; matrix: UsageMatrixRow[] } | null;
+  mcp: McpServerLite[] | null;
+  loading: boolean;
+  reload: () => Promise<void>;
+}
+
+function useSettingsData(): SettingsData {
   const { rs } = useRemote();
+  const toast = useToast();
   const [state, setState] = useState<SettingsState | null>(null);
   const [usage, setUsage] = useState<{ summary: UsageSummaryLite; matrix: UsageMatrixRow[] } | null>(null);
   const [mcp, setMcp] = useState<McpServerLite[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
@@ -39,49 +71,139 @@ export function SettingsScreen() {
       setUsage({ summary: u.summary, matrix: u.matrix });
       const m = await rs.request<{ ev: "settings.mcp"; servers: McpServerLite[] }>("settings.mcp");
       setMcp(m.servers);
-      setError(null);
     } catch (e) {
-      setError(e instanceof RelayError ? e.message : "Failed to load settings");
+      toast(e instanceof RelayError ? e.message : "Failed to load settings", "danger");
+    } finally {
+      setLoading(false);
     }
-  }, [rs]);
+  }, [rs, toast]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  async function refresh(): Promise<void> {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }
-
-  return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={C.accent} />}
-    >
-      {error ? <ErrorBoxInline msg={error} /> : null}
-      {!state ? <SkeletonList rows={3} /> : <ModesCard state={state} onChanged={() => void load()} />}
-      {state ? <BudgetCard state={state} onChanged={() => void load()} /> : null}
-      {state ? <ProviderCard state={state} onChanged={() => void load()} /> : null}
-      {state ? <RoutesCard state={state} onChanged={() => void load()} /> : null}
-      {usage ? <UsageCard data={usage} /> : null}
-      {mcp ? <McpCard servers={mcp} onChanged={() => void load()} /> : null}
-      {state ? <DangerCard resetPending={state.resetPending} /> : null}
-    </ScrollView>
-  );
+  return { state, usage, mcp, loading: loading && state === null, reload: load };
 }
 
-function ErrorBoxInline({ msg }: { msg: string }) {
+export function SettingsScreen() {
+  const [page, setPage] = useState<Sub>(null);
+  const data = useSettingsData();
   return (
-    <View style={{ backgroundColor: "#2a1a1a", borderColor: "#5c2a2a", borderWidth: 1, borderRadius: 10, padding: 10 }}>
-      <Text style={{ color: C.danger, fontSize: 12.5 }}>{msg}</Text>
+    <View style={{ flex: 1 }}>
+      {page === null ? (
+        <Landing loading={data.loading} onOpen={(p) => setPage(p)} />
+      ) : (
+        <SubPage page={page} data={data} onBack={() => setPage(null)} />
+      )}
+      <FabNav items={NAV_ITEMS} active={page} onPick={(k) => setPage(k as SubKey)} />
     </View>
   );
 }
 
-// ── Modes: safety vs hardcore ───────────────────────────────────────────
+// ── Landing: menu 4 row ─────────────────────────────────────────────────
+
+function Landing({ loading, onOpen }: { loading: boolean; onOpen: (p: SubKey) => void }) {
+  return (
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 140 }}>
+      {loading ? <SkeletonList rows={3} /> : null}
+      <Card style={{ padding: 0 }}>
+        {MENUS.map((m, i) => (
+          <Pressable
+            key={m.key}
+            onPress={() => onOpen(m.key)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+              paddingHorizontal: 14,
+              paddingVertical: 13,
+              borderTopWidth: i === 0 ? 0 : 1,
+              borderTopColor: C.line,
+            }}
+          >
+            <Icon name={m.icon} size={20} color={C.text} />
+            <View style={{ flex: 1 }}>
+              <Txt style={{ color: C.text, fontSize: 14.5, fontWeight: "600" }}>{m.label}</Txt>
+              <Txt style={{ color: C.dim, fontSize: 12, marginTop: 2 }}>{m.desc}</Txt>
+            </View>
+            <Icon name="chev-r" size={16} color={C.faint} />
+          </Pressable>
+        ))}
+      </Card>
+    </ScrollView>
+  );
+}
+
+// ── Sub-screen shell: back chevron + konten ─────────────────────────────
+
+function SubPage({ page, data, onBack }: { page: SubKey; data: SettingsData; onBack: () => void }) {
+  const [refreshing, setRefreshing] = useState(false);
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingBottom: 8 }}>
+        <Pressable
+          onPress={onBack}
+          hitSlop={8}
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 10,
+            backgroundColor: C.surface,
+            borderColor: C.line,
+            borderWidth: 1,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Icon name="chev-l" size={18} color={C.text} />
+        </Pressable>
+        <Txt style={{ color: C.text, fontSize: 17, fontWeight: "700", flex: 1 }}>{SUB_TITLES[page]}</Txt>
+      </View>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 160 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void data.reload().finally(() => setRefreshing(false));
+            }}
+            tintColor={C.accent}
+          />
+        }
+      >
+        {data.loading ? (
+          <SkeletonList rows={3} />
+        ) : (
+          <>
+            {page === "usage" ? (
+              <>
+                {data.state ? <BudgetCard state={data.state} onChanged={() => void data.reload()} /> : null}
+                {data.usage ? <UsageCard data={data.usage} /> : null}
+              </>
+            ) : null}
+            {page === "provider" ? (
+              <>
+                {data.state ? <ProviderCard state={data.state} onChanged={() => void data.reload()} /> : null}
+                {data.state ? <RoutesCard state={data.state} onChanged={() => void data.reload()} /> : null}
+              </>
+            ) : null}
+            {page === "mcp" ? (data.mcp ? <McpCard servers={data.mcp} onChanged={() => void data.reload()} /> : null) : null}
+            {page === "actions" ? (
+              <>
+                {data.state ? <ModesCard state={data.state} onChanged={() => void data.reload()} /> : null}
+                {data.state ? <DangerCard resetPending={data.state.resetPending} /> : null}
+              </>
+            ) : null}
+          </>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+// ── Modes: safety vs hardcore (Actions) ─────────────────────────────────
 
 function ModesCard({ state, onChanged }: { state: SettingsState; onChanged: () => void }) {
   const { rs } = useRemote();
@@ -110,16 +232,16 @@ function ModesCard({ state, onChanged }: { state: SettingsState; onChanged: () =
           <Btn label="Hardcore mode" tone="danger" outline={!hardcore} disabled={busy || hardcore} onPress={() => void set("auto")} />
         </View>
       </View>
-      <Text style={{ color: C.dim, fontSize: 12, marginTop: 10, lineHeight: 17 }}>
+      <Txt style={{ color: C.dim, fontSize: 12, marginTop: 10, lineHeight: 17 }}>
         {hardcore
           ? "Hardcore: risky tool calls are auto-approved. Fast, but nothing asks you first."
           : "Safety: risky tool calls pause and ask you here before running."}
-      </Text>
+      </Txt>
     </Card>
   );
 }
 
-// ── Budget ──────────────────────────────────────────────────────────────
+// ── Budget (Limit & Usage) ──────────────────────────────────────────────
 
 function BudgetCard({ state, onChanged }: { state: SettingsState; onChanged: () => void }) {
   const { rs } = useRemote();
@@ -156,9 +278,9 @@ function BudgetCard({ state, onChanged }: { state: SettingsState; onChanged: () 
         <Stat label="Burn/hr" value={money(b.burnRatePerHour ?? 0, b.currency)} />
       </View>
       {b.coverage === "partial" ? (
-        <Text style={{ color: C.warn, fontSize: 11.5, marginBottom: 8 }}>
+        <Txt style={{ color: C.warn, fontSize: 11.5, marginBottom: 8 }}>
           Some models have no price set — spend shown is a lower bound.
-        </Text>
+        </Txt>
       ) : null}
       <View style={{ flexDirection: "row", gap: 8 }}>
         <View style={{ flex: 1 }}>
@@ -170,9 +292,9 @@ function BudgetCard({ state, onChanged }: { state: SettingsState; onChanged: () 
       </View>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 }}>
         <Btn label={busy ? "Saving…" : "Save limits"} small onPress={() => void save()} disabled={busy} />
-        {msg ? <Text style={{ color: C.dim, fontSize: 12 }}>{msg}</Text> : null}
+        {msg ? <Txt style={{ color: C.dim, fontSize: 12 }}>{msg}</Txt> : null}
       </View>
-      <Text style={{ color: C.faint, fontSize: 11, marginTop: 8 }}>Leave blank for no limit. Currency follows the price book.</Text>
+      <Txt style={{ color: C.faint, fontSize: 11, marginTop: 8 }}>Leave blank for no limit. Currency follows the price book.</Txt>
     </Card>
   );
 }
@@ -180,13 +302,13 @@ function BudgetCard({ state, onChanged }: { state: SettingsState; onChanged: () 
 function Stat({ label, value, warn = false }: { label: string; value: string; warn?: boolean }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.inset, borderRadius: 10, padding: 10 }}>
-      <Text style={{ color: C.faint, fontSize: 10.5, textTransform: "uppercase", letterSpacing: 1 }}>{label}</Text>
-      <Text style={{ color: warn ? C.warn : C.text, fontSize: 14, fontWeight: "700", marginTop: 3 }}>{value}</Text>
+      <Txt style={{ color: C.faint, fontSize: 10.5, textTransform: "uppercase", letterSpacing: 1 }}>{label}</Txt>
+      <Txt style={{ color: warn ? C.warn : C.text, fontSize: 14, fontWeight: "700", marginTop: 3 }}>{value}</Txt>
     </View>
   );
 }
 
-// ── Provider ────────────────────────────────────────────────────────────
+// ── Provider (Provider & Model) ─────────────────────────────────────────
 
 function ProviderCard({ state, onChanged }: { state: SettingsState; onChanged: () => void }) {
   const { rs } = useRemote();
@@ -242,13 +364,13 @@ function ProviderCard({ state, onChanged }: { state: SettingsState; onChanged: (
       </View>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 }}>
         <Btn label={busy ? "Saving…" : "Save provider"} small onPress={() => void save()} disabled={busy} />
-        {msg ? <Text style={{ color: C.dim, fontSize: 12, flex: 1 }}>{msg}</Text> : null}
+        {msg ? <Txt style={{ color: C.dim, fontSize: 12, flex: 1 }}>{msg}</Txt> : null}
       </View>
     </Card>
   );
 }
 
-// ── Model routes per persona ────────────────────────────────────────────
+// ── Model routes per persona (Provider & Model) ─────────────────────────
 
 function RoutesCard({ state, onChanged }: { state: SettingsState; onChanged: () => void }) {
   const { rs } = useRemote();
@@ -276,10 +398,10 @@ function RoutesCard({ state, onChanged }: { state: SettingsState; onChanged: () 
   return (
     <Card>
       <SectionTitle>Model routes</SectionTitle>
-      <Text style={{ color: C.dim, fontSize: 12, marginBottom: 10 }}>
+      <Txt style={{ color: C.dim, fontSize: 12, marginBottom: 10 }}>
         Default: {routes.defaultModel}
         {routes.defaultFallback ? ` (fallback ${routes.defaultFallback})` : ""}
-      </Text>
+      </Txt>
       {routes.personas.map((p) => {
         const cur = routes.overrides[p.id]?.model || null;
         const value = edits[p.id] ?? "";
@@ -287,7 +409,7 @@ function RoutesCard({ state, onChanged }: { state: SettingsState; onChanged: () 
           <View key={p.id} style={{ marginBottom: 10 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 6 }}>
               <Mascot personaId={p.id} size={26} />
-              <Text style={{ color: C.text, fontSize: 13.5, fontWeight: "600", flex: 1 }}>{personaMeta(p.id).name}</Text>
+              <Txt style={{ color: C.text, fontSize: 13.5, fontWeight: "600", flex: 1 }}>{personaMeta(p.id).name}</Txt>
               {cur ? <Chip label={cur} tone="accent" /> : <Chip label="default" />}
             </View>
             <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end" }}>
@@ -310,13 +432,13 @@ function RoutesCard({ state, onChanged }: { state: SettingsState; onChanged: () 
           </View>
         );
       })}
-      {msg ? <Text style={{ color: C.dim, fontSize: 12 }}>{msg}</Text> : null}
-      <Text style={{ color: C.faint, fontSize: 11, marginTop: 6 }}>Clear the field and save to fall back to the default model.</Text>
+      {msg ? <Txt style={{ color: C.dim, fontSize: 12 }}>{msg}</Txt> : null}
+      <Txt style={{ color: C.faint, fontSize: 11, marginTop: 6 }}>Clear the field and save to fall back to the default model.</Txt>
     </Card>
   );
 }
 
-// ── Usage ───────────────────────────────────────────────────────────────
+// ── Usage (Limit & Usage) ───────────────────────────────────────────────
 
 function UsageCard({ data }: { data: { summary: UsageSummaryLite; matrix: UsageMatrixRow[] } }) {
   const s = data.summary;
@@ -331,16 +453,16 @@ function UsageCard({ data }: { data: { summary: UsageSummaryLite; matrix: UsageM
       {data.matrix.slice(0, 12).map((r, i) => (
         <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 5 }}>
           <Mascot personaId={r.personaId} size={20} />
-          <Text style={{ color: C.text, fontSize: 12.5, flex: 1 }} numberOfLines={1}>
+          <Txt style={{ color: C.text, fontSize: 12.5, flex: 1 }} numberOfLines={1}>
             {personaMeta(r.personaId).name} · {r.model}
-          </Text>
-          <Text style={{ color: C.dim, fontSize: 12 }}>{r.calls}×</Text>
-          <Text style={{ color: r.cost == null ? C.faint : C.text, fontSize: 12 }}>
+          </Txt>
+          <Txt style={{ color: C.dim, fontSize: 12 }}>{r.calls}×</Txt>
+          <Txt style={{ color: r.cost == null ? C.faint : C.text, fontSize: 12 }}>
             {r.cost == null ? "unpriced" : money(r.cost, r.currency)}
-          </Text>
+          </Txt>
         </View>
       ))}
-      {data.matrix.length === 0 ? <Text style={{ color: C.faint, fontSize: 12 }}>No recorded usage yet.</Text> : null}
+      {data.matrix.length === 0 ? <Txt style={{ color: C.faint, fontSize: 12 }}>No recorded usage yet.</Txt> : null}
     </Card>
   );
 }
@@ -349,6 +471,7 @@ function UsageCard({ data }: { data: { summary: UsageSummaryLite; matrix: UsageM
 
 function McpCard({ servers, onChanged }: { servers: McpServerLite[]; onChanged: () => void }) {
   const { rs } = useRemote();
+  const toast = useToast();
   const [busy, setBusy] = useState<string | null>(null);
 
   async function retry(name: string): Promise<void> {
@@ -356,7 +479,8 @@ function McpCard({ servers, onChanged }: { servers: McpServerLite[]; onChanged: 
     try {
       await rs.request("mcp.retry", { name });
       onChanged();
-    } catch {
+    } catch (e) {
+      toast(e instanceof RelayError ? e.message : "Retry failed", "danger");
       onChanged();
     } finally {
       setBusy(null);
@@ -380,18 +504,18 @@ function McpCard({ servers, onChanged }: { servers: McpServerLite[]; onChanged: 
       {servers.map((s) => (
         <View key={s.name} style={{ marginBottom: 10 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Text style={{ color: C.text, fontSize: 13.5, fontWeight: "600", flex: 1 }} numberOfLines={1}>
+            <Txt style={{ color: C.text, fontSize: 13.5, fontWeight: "600", flex: 1 }} numberOfLines={1}>
               {s.name}
-            </Text>
+            </Txt>
             <Chip
               label={s.state}
               tone={s.connected ? "ok" : s.state === "error" ? "danger" : "dim"}
             />
           </View>
-          <Text style={{ color: C.dim, fontSize: 11.5, marginTop: 3 }}>
+          <Txt style={{ color: C.dim, fontSize: 11.5, marginTop: 3 }}>
             {s.trusted ? "trusted" : "untrusted"} · {s.toolCount} tools
             {s.lastError ? ` · ${s.lastError}` : ""}
-          </Text>
+          </Txt>
           <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
             {!s.connected ? (
               <Btn label={busy === s.name ? "…" : "Retry"} small outline onPress={() => void retry(s.name)} disabled={busy !== null} />
@@ -407,15 +531,16 @@ function McpCard({ servers, onChanged }: { servers: McpServerLite[]; onChanged: 
           </View>
         </View>
       ))}
-      {servers.length === 0 ? <Text style={{ color: C.faint, fontSize: 12 }}>No MCP servers configured on this host.</Text> : null}
+      {servers.length === 0 ? <Txt style={{ color: C.faint, fontSize: 12 }}>No MCP servers configured on this host.</Txt> : null}
     </Card>
   );
 }
 
-// ── Danger: reset host ──────────────────────────────────────────────────
+// ── Danger: reset host (Actions) ────────────────────────────────────────
 
 function DangerCard({ resetPending }: { resetPending: boolean }) {
   const { rs } = useRemote();
+  const toast = useToast();
   const [scope, setScope] = useState<"work" | "factory">("work");
   const [confirmText, setConfirmText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -426,8 +551,9 @@ function DangerCard({ resetPending }: { resetPending: boolean }) {
     try {
       await rs.request("reset.run", { scope, confirm: "RESET" }, 8_000);
       setConfirmText("");
-    } catch {
+    } catch (e) {
       setBusy(false);
+      toast(e instanceof RelayError ? e.message : "Reset failed", "danger");
     }
   }
 
@@ -435,9 +561,9 @@ function DangerCard({ resetPending }: { resetPending: boolean }) {
     <Card style={{ borderColor: "#5c2a2a" }}>
       <SectionTitle>Danger zone</SectionTitle>
       {resetPending ? (
-        <Text style={{ color: C.warn, fontSize: 12.5, marginBottom: 8 }}>
+        <Txt style={{ color: C.warn, fontSize: 12.5, marginBottom: 8 }}>
           A reset is already pending on the host — it will complete on next engine start.
-        </Text>
+        </Txt>
       ) : null}
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
         <View style={{ flex: 1 }}>
@@ -447,12 +573,12 @@ function DangerCard({ resetPending }: { resetPending: boolean }) {
           <Btn label="Factory reset" outline={scope !== "factory"} tone="danger" small onPress={() => setScope("factory")} />
         </View>
       </View>
-      <Text style={{ color: C.dim, fontSize: 12, lineHeight: 17, marginBottom: 10 }}>
+      <Txt style={{ color: C.dim, fontSize: 12, lineHeight: 17, marginBottom: 10 }}>
         {scope === "work"
           ? "Deletes projects, sessions, and workspace data. Keeps your account link and provider setup."
           : "Deletes everything including the portal link. The host restarts empty and must be set up again."}
         {"\n"}The host restarts right after you run this.
-      </Text>
+      </Txt>
       <Field
         label='Type "RESET" to confirm'
         value={confirmText}

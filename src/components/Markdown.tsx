@@ -2,7 +2,9 @@
 // Cakupan: heading, bullet/numbered list, fenced code, inline code, bold,
 // italic, link (buka via Linking), blockquote, hr, paragraf.
 import React from "react";
-import { Linking, Text, View } from "react-native";
+import { Linking, View } from "react-native";
+
+import { Txt } from "../ui";
 import { C, R } from "../theme";
 
 // ── inline: **bold** *italic* `code` [t](url) ─────────────────────────
@@ -38,28 +40,28 @@ export function tokenizeInline(src: string): InlineTok[] {
 export function InlineText({ src, dim = false }: { src: string; dim?: boolean }) {
   const toks = React.useMemo(() => tokenizeInline(src), [src]);
   return (
-    <Text style={{ color: dim ? C.dim : C.text, fontSize: 14, lineHeight: 20 }}>
+    <Txt style={{ color: dim ? C.dim : C.text, fontSize: 14, lineHeight: 20 }}>
       {toks.map((tk, i) => {
-        if (tk.t === "bold") return <Text key={i} style={{ fontWeight: "700", color: C.text }}>{tk.v}</Text>;
-        if (tk.t === "italic") return <Text key={i} style={{ fontStyle: "italic" }}>{tk.v}</Text>;
+        if (tk.t === "bold") return <Txt key={i} style={{ fontWeight: "700", color: C.text }}>{tk.v}</Txt>;
+        if (tk.t === "italic") return <Txt key={i} style={{ fontStyle: "italic" }}>{tk.v}</Txt>;
         if (tk.t === "code")
           return (
-            <Text
+            <Txt
               key={i}
               style={{ fontFamily: "monospace", fontSize: 12.5, color: "#8ec4ff", backgroundColor: C.code, borderRadius: 4, overflow: "hidden", paddingHorizontal: 4 }}
             >
               {tk.v}
-            </Text>
+            </Txt>
           );
         if (tk.t === "link")
           return (
-            <Text key={i} style={{ color: C.accent, textDecorationLine: "underline" }} onPress={() => void Linking.openURL(tk.url).catch(() => undefined)}>
+            <Txt key={i} style={{ color: C.accent, textDecorationLine: "underline" }} onPress={() => void Linking.openURL(tk.url).catch(() => undefined)}>
               {tk.v}
-            </Text>
+            </Txt>
           );
-        return <Text key={i}>{tk.v}</Text>;
+        return <Txt key={i}>{tk.v}</Txt>;
       })}
-    </Text>
+    </Txt>
   );
 }
 
@@ -67,10 +69,10 @@ export function InlineText({ src, dim = false }: { src: string; dim?: boolean })
 function CodeBlock({ code, lang }: { code: string; lang?: string }) {
   return (
     <View style={{ backgroundColor: C.monoBg, borderRadius: R.bubble, borderWidth: 1, borderColor: C.line, padding: 10, marginVertical: 6 }}>
-      {lang ? <Text style={{ color: C.faint, fontSize: 11, marginBottom: 4, fontFamily: "monospace" }}>{lang}</Text> : null}
-      <Text style={{ color: "#d7e3f4", fontSize: 12.5, lineHeight: 18, fontFamily: "monospace" }} selectable>
+      {lang ? <Txt style={{ color: C.faint, fontSize: 11, marginBottom: 4, fontFamily: "monospace" }}>{lang}</Txt> : null}
+      <Txt style={{ color: "#d7e3f4", fontSize: 12.5, lineHeight: 18, fontFamily: "monospace" }} selectable>
         {code}
-      </Text>
+      </Txt>
     </View>
   );
 }
@@ -85,14 +87,14 @@ export function Markdown({ text }: { text: string }) {
             return <CodeBlock key={i} code={b.code} lang={b.lang} />;
           case "h":
             return (
-              <Text key={i} style={{ color: C.text, fontSize: b.level >= 3 ? 14.5 : 16.5, fontWeight: "700", marginTop: 6 }}>
+              <Txt key={i} style={{ color: C.text, fontSize: b.level >= 3 ? 14.5 : 16.5, fontWeight: "700", marginTop: 6 }}>
                 {b.v}
-              </Text>
+              </Txt>
             );
           case "li":
             return (
               <View key={i} style={{ flexDirection: "row", paddingLeft: 8, paddingVertical: 1.5 }}>
-                <Text style={{ color: C.dim, fontSize: 14, width: 16 }}>{b.ordered ? `${b.n}.` : "•"}</Text>
+                <Txt style={{ color: C.dim, fontSize: 14, width: 16 }}>{b.ordered ? `${b.n}.` : "•"}</Txt>
                 <View style={{ flex: 1 }}>
                   <InlineText src={b.v} />
                 </View>
