@@ -172,6 +172,7 @@ h2{font-size:17px; margin:42px 0 4px; color:var(--text);}
 /* ── list content ── */
 .pad{padding:16px; display:flex; flex-direction:column; gap:12px; padding-bottom:24px;}
 .rowline{display:flex; align-items:center;}
+.rowline .chip{align-self:center;}
 .g6{gap:6px}.g8{gap:8px}.g10{gap:10px}.g12{gap:12px}
 .mt2{margin-top:2px}.mt6{margin-top:6px}.mt8{margin-top:8px}.mt10{margin-top:10px}.mt12{margin-top:12px}
 .link{color:var(--accent); font-size:13px; font-weight:700; margin-top:12px;}
@@ -195,8 +196,8 @@ h2{font-size:17px; margin:42px 0 4px; color:var(--text);}
 .chat-input{display:flex; align-items:flex-end; gap:8px; padding:10px 12px; border-top:1px solid var(--line); flex-shrink:0;}
 .chat-input .ti{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-bubble);
   padding:9px 12px; font-size:14px; color:var(--text); min-height:38px;}
-.chat-input .send{background:var(--accent); border-radius:var(--r-bubble); padding:11px 16px;
-  color:#fff; font-size:13px; font-weight:700;}
+.chat-input .send{background:var(--accent); border-radius:var(--r-bubble); padding:9px;
+  display:flex; align-items:center; justify-content:center; color:#fff;}
 .chat-input .send.disabled{opacity:.45;}
 
 /* markdown port */
@@ -285,6 +286,7 @@ table.tk th{color:var(--text); font-weight:600;}
     <symbol id="i-users" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></g></symbol>
     <symbol id="i-activity" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></g></symbol>
     <symbol id="i-terminal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 17 6-6-6-6M12 19h8"/></g></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></g></symbol>
     <symbol id="i-file" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></g></symbol>
     <symbol id="i-file-code" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><polyline points="10 13 8 15 10 17"/><polyline points="14 13 16 15 14 17"/></g></symbol>
     <symbol id="i-file-text" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></g></symbol>
@@ -1185,7 +1187,7 @@ Tap menu → overlay + floating card muncul (spring + stagger), pilih item → o
       </div>
             <div style="flex:1;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:0;">
         <div class="rowline g8">
-          <span class="chip ok">live</span>
+          <span class="chip ok">Live</span>
           <span class="faint f11 flex1 mono">term-7f3a</span>
           <span class="btn dim-outline small">Detach</span>
         </div>
@@ -1315,7 +1317,7 @@ C:\work\katalog&gt;_</div>
       </div>
       <div class="chat-input">
         <div class="ti" style="color:var(--faint)">Message…</div>
-        <span class="send disabled">Send</span>
+        <span class="send disabled"><svg class="ic"><use href="#i-send"/></svg></span>
       </div>
       <div class="homebar"></div>
     </div></div>
@@ -1338,11 +1340,11 @@ C:\work\katalog&gt;_</div>
         </div>
       </div>
       <div class="scroll" style="display:flex;align-items:center;justify-content:center;">
-        <div class="dim f12-5" style="text-align:center;max-width:260px;">No messages yet — say something to start this session.</div>
+        <div class="dim f12-5" style="text-align:center;max-width:260px;">No Messages Yet</div>
       </div>
       <div class="chat-input">
         <div class="ti" style="color:var(--faint)">Message…</div>
-        <span class="send disabled">Send</span>
+        <span class="send disabled"><svg class="ic"><use href="#i-send"/></svg></span>
       </div>
       <div class="homebar"></div>
     </div></div>
