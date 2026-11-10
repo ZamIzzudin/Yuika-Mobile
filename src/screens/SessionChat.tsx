@@ -1,6 +1,12 @@
 // Chat sesi remote: bubble markdown utk assistant (tool/log TIDAK jadi bubble),
 // auto-scroll saat dekat bawah, header persona (maskot + display name),
 // Stop saat running. Snapshot via request; delta/done via bus event.
+//
+// Performa: snapshot penuh disimpan di state, tapi FlatList hanya merender
+// WINDOW terakhir (default 8 bubble) — transcript panjang tidak merender
+// ratusan Markdown sekaligus. Scroll ke atas memuat batch sebelumnya
+// (+16) dengan offset dipertahankan. Bubble kosong (tool/thinking tanpa
+// teks) difilter — tidak ada bubble blank.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
@@ -14,6 +20,7 @@ import {
 import { Icon } from "../components/Icon";
 import { Markdown } from "../components/Markdown";
 import { Mascot } from "../components/Mascot";
+import { Bar } from "../components/Skeleton";
 import { personaMeta } from "../personas";
 import { useRemote } from "../remote/RemoteProvider";
 import { nextRid, type RemoteEvent, type TranscriptMsg } from "../relay";
@@ -28,6 +35,9 @@ interface Bubble {
   at: number;
 }
 
+const WINDOW_FIRST = 8; // bubble yang dirender pertama kali
+const WINDOW_STEP = 16; // batch tambahan saat scroll ke atas
+
 export function SessionChat({
   sessionId,
   personaId,
@@ -37,15 +47,19 @@ export function SessionChat({
   personaId: string;
   title: string;
 }) {
-  const { rs, subscribe, pop } = useRemote();
+  const { rs, subscribe } = useRemote();
   const meta = personaMeta(personaId);
-  const [bubbles, setBubbles] = useState<Bubble[] | null>(null);
+  const [all, setAll] = useState<Bubble[] | null>(null);
+  const [window_, setWindow] = useState(WINDOW_FIRST);
   const [streaming, setStreaming] = useState("");
   const [running, setRunning] = useState(false);
   const [draft, setDraft] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
   const listRef = useRef<FlatList<Bubble> | null>(null);
   const nearBottom = useRef(true);
+  // load-earlier: simpan metrik sebelum batch baru agar offset dipertahankan
+  const restoring = useRef(false);
+  const prevMetrics = useRef<{ offset: number; height: number } | null>(null);
 
   // snapshot awal (request ber-rid → reply session.snapshot).
   useEffect(() => {
@@ -67,11 +81,15 @@ export function SessionChat({
         if ("sessionId" in ev && ev.sessionId !== sessionId) return;
         switch (ev.ev) {
           case "session.snapshot":
-            setBubbles(
+            setAll(
               ev.messages
-                .filter((m): m is TranscriptMsg & { role: "user" | "assistant" } => m.role !== "tool")
+                .filter(
+                  (m): m is TranscriptMsg & { role: "user" | "assistant" } =>
+                    (m.role === "user" || m.role === "assistant") && m.text.trim().length > 0,
+                )
                 .map((m, i) => ({ key: `h-${i}`, role: m.role, personaId: m.personaId, text: m.text, at: m.at })),
             );
+            setWindow(WINDOW_FIRST);
             setStreaming("");
             setRunning(false);
             break;
@@ -82,7 +100,7 @@ export function SessionChat({
           case "message.done": {
             setRunning(false);
             if (ev.finish === "error") {
-              setBubbles((b) => [
+              setAll((b) => [
                 ...(b ?? []),
                 { key: `e-${ev.seq}`, role: "error", text: "Turn failed. The host reported an error; try again.", at: Date.now() },
               ]);
@@ -91,7 +109,7 @@ export function SessionChat({
             }
             setStreaming((s) => {
               if (s.trim().length > 0) {
-                setBubbles((b) => [...(b ?? []), { key: `a-${ev.seq}`, role: "assistant", personaId, text: s, at: Date.now() }]);
+                setAll((b) => [...(b ?? []), { key: `a-${ev.seq}`, role: "assistant", personaId, text: s, at: Date.now() }]);
                 return "";
               }
               return s;
@@ -109,7 +127,7 @@ export function SessionChat({
     const msg = draft.trim();
     if (!msg || running) return;
     setDraft("");
-    setBubbles((b) => [...(b ?? []), { key: `u-${Date.now()}`, role: "user", text: msg, at: Date.now() }]);
+    setAll((b) => [...(b ?? []), { key: `u-${Date.now()}`, role: "user", text: msg, at: Date.now() }]);
     setRunning(true);
     void rs.sendAction({ proto: 1, act: "send_prompt", rid: nextRid(), sessionId, message: msg });
   }
@@ -118,21 +136,44 @@ export function SessionChat({
     void rs.sendAction({ proto: 1, act: "cancel", rid: nextRid(), sessionId });
   }
 
-  const data = useMemo(() => bubbles ?? [], [bubbles]);
+  const data = useMemo(() => {
+    if (all === null) return [];
+    return all.slice(Math.max(0, all.length - window_));
+  }, [all, window_]);
 
-  if (bubbles === null && !loadError) {
+  const hiddenCount = all === null ? 0 : Math.max(0, all.length - window_);
+
+  if (all === null && !loadError) {
+    // skeleton bubbles (mockup: loading state chat) — bukan label polos.
     return (
-      <View style={{ flex: 1, padding: 16, gap: 10 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <Mascot personaId={personaId} size={42} />
+      <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingBottom: 12 }}>
+          <Mascot personaId={personaId} size={40} />
           <View style={{ flex: 1 }}>
-            <Txt style={{ color: C.text, fontSize: 16, fontWeight: "700" }} numberOfLines={1}>
+            <Txt style={{ color: C.text, fontSize: 15.5, fontWeight: "700" }} numberOfLines={1}>
               {title || meta.name}
             </Txt>
-            <Txt style={{ color: C.dim, fontSize: 12.5 }}>{meta.name}</Txt>
+            <Txt style={{ color: C.dim, fontSize: 12 }}>{meta.name}</Txt>
           </View>
         </View>
-        <Txt style={{ color: C.faint, fontSize: 12.5 }}>Loading transcript…</Txt>
+        <View style={{ flex: 1, paddingHorizontal: 16, paddingVertical: 10, gap: 10 }}>
+          <View style={{ alignSelf: "flex-end", maxWidth: "70%", gap: 6 }}>
+            <Bar w="86%" h={12} radius={8} style={{ alignSelf: "flex-end" }} />
+            <Bar w="54%" h={12} radius={8} style={{ alignSelf: "flex-end" }} />
+          </View>
+          <View style={{ alignSelf: "flex-start", maxWidth: "80%", gap: 6 }}>
+            <Bar w="92%" h={12} radius={8} />
+            <Bar w="76%" h={12} radius={8} />
+            <Bar w="40%" h={12} radius={8} />
+          </View>
+          <View style={{ alignSelf: "flex-end", maxWidth: "60%", gap: 6 }}>
+            <Bar w="70%" h={12} radius={8} style={{ alignSelf: "flex-end" }} />
+          </View>
+          <View style={{ alignSelf: "flex-start", maxWidth: "85%", gap: 6 }}>
+            <Bar w="88%" h={12} radius={8} />
+            <Bar w="62%" h={12} radius={8} />
+          </View>
+        </View>
       </View>
     );
   }
@@ -181,11 +222,39 @@ export function SessionChat({
         onScroll={(e) => {
           const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
           nearBottom.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 120;
+          // dekat atas & masih ada history → muat batch sebelumnya
+          if (
+            !restoring.current &&
+            contentOffset.y < 48 &&
+            hiddenCount > 0
+          ) {
+            restoring.current = true;
+            prevMetrics.current = { offset: contentOffset.y, height: contentSize.height };
+            setWindow((w) => w + WINDOW_STEP);
+          }
         }}
         scrollEventThrottle={120}
-        onContentSizeChange={() => {
+        onContentSizeChange={(w, h) => {
+          if (restoring.current && prevMetrics.current) {
+            // pertahankan posisi baca: geser offset sebesar tinggi batch baru
+            const delta = h - prevMetrics.current.height;
+            listRef.current?.scrollToOffset({
+              offset: Math.max(0, prevMetrics.current.offset + delta),
+              animated: false,
+            });
+            restoring.current = false;
+            prevMetrics.current = null;
+            return;
+          }
           if (nearBottom.current) listRef.current?.scrollToEnd({ animated: false });
         }}
+        ListHeaderComponent={
+          hiddenCount > 0 ? (
+            <Txt style={{ color: C.faint, fontSize: 11, textAlign: "center", paddingVertical: 6 }}>
+              {hiddenCount} earlier message{hiddenCount === 1 ? "" : "s"} — scroll up to load
+            </Txt>
+          ) : undefined
+        }
         renderItem={({ item }) =>
           item.role === "error" ? (
             <View

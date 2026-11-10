@@ -171,7 +171,7 @@ export default function App() {
         </Pressable>
       </View>
       <FlatList
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24, gap: 10 }}
+        contentContainerStyle={{ paddingBottom: 24, gap: 10 }}
         data={hosts ?? []}
         keyExtractor={(h) => h.deviceId}
         refreshControl={

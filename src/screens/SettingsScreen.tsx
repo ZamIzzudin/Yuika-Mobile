@@ -5,7 +5,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
-import { FabNav, type FabNavItem } from "../components/FabNav";
 import { Icon } from "../components/Icon";
 import { Mascot } from "../components/Mascot";
 import { SkeletonList } from "../components/Skeleton";
@@ -30,8 +29,6 @@ const MENUS: Array<{ key: SubKey; label: string; desc: string; icon: "activity" 
   { key: "mcp", label: "MCP", desc: "Trusted servers, tools, retry", icon: "plug" },
   { key: "actions", label: "Actions", desc: "Approval mode, resets", icon: "shield" },
 ];
-
-const NAV_ITEMS: FabNavItem[] = MENUS.map((m) => ({ key: m.key, label: m.label, icon: m.icon }));
 
 const SUB_TITLES: Record<SubKey, string> = {
   usage: "Limit & Usage",
@@ -95,7 +92,6 @@ export function SettingsScreen() {
       ) : (
         <SubPage page={page} data={data} onBack={() => setPage(null)} />
       )}
-      <FabNav items={NAV_ITEMS} active={page} onPick={(k) => setPage(k as SubKey)} />
     </View>
   );
 }
@@ -104,7 +100,7 @@ export function SettingsScreen() {
 
 function Landing({ loading, onOpen }: { loading: boolean; onOpen: (p: SubKey) => void }) {
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 140 }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}>
       {loading ? <SkeletonList rows={3} /> : null}
       <Card style={{ padding: 0 }}>
         {MENUS.map((m, i) => (
@@ -161,7 +157,7 @@ function SubPage({ page, data, onBack }: { page: SubKey; data: SettingsData; onB
       </View>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 160 }}
+        contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

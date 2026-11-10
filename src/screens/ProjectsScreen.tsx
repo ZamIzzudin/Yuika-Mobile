@@ -1,7 +1,7 @@
 // Tab Projects: daftar project host + ringkasan misi (task stats, delegasi
 // aktif, sesi terakhir). Skeleton saat fetch, pull-to-refresh.
 import React, { useCallback, useEffect, useState } from "react";
-import { FlatList, RefreshControl, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, View } from "react-native";
 
 import { useRemote } from "../remote/RemoteProvider";
 import type { ProjectSummary } from "../relay";
@@ -96,7 +96,12 @@ function ProjectCard({ p }: { p: ProjectSummary }) {
   const { push } = useRemote();
   const t = p.taskStats;
   const lastSession = p.sessions[0];
+  // Whole card = trigger (mockup 2.1); tanpa tombol label terpisah.
   return (
+    <Pressable
+      onPress={() => push({ v: "project", projectId: p.project.id, name: p.project.name })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+    >
     <Card>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
         <View style={{ flex: 1 }}>
@@ -122,14 +127,8 @@ function ProjectCard({ p }: { p: ProjectSummary }) {
       {lastSession ? (
         <Txt style={{ color: C.faint, fontSize: 11, marginTop: 10 }}>Last update {relative(lastSession.updatedAt)}</Txt>
       ) : null}
-
-      <Txt
-        onPress={() => push({ v: "project", projectId: p.project.id, name: p.project.name })}
-        style={{ color: C.accent, fontSize: 13, fontWeight: "700", marginTop: 12 }}
-      >
-        Open mission control →
-      </Txt>
     </Card>
+    </Pressable>
   );
 }
 
