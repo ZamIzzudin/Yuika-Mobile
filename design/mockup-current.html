@@ -286,6 +286,8 @@ table.tk th{color:var(--text); font-weight:600;}
     <symbol id="i-users" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></g></symbol>
     <symbol id="i-activity" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></g></symbol>
     <symbol id="i-terminal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 17 6-6-6-6M12 19h8"/></g></symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></g></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></g></symbol>
     <symbol id="i-send" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></g></symbol>
     <symbol id="i-file" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></g></symbol>
     <symbol id="i-file-code" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><polyline points="10 13 8 15 10 17"/><polyline points="14 13 16 15 14 17"/></g></symbol>
@@ -647,29 +649,136 @@ Overlay approval muncul menimpa konten, di atas tab bar. Pull-to-refresh di semu
 </div>
 
 <!-- ════════════════ 3. SETTINGS ════════════════ -->
-<h2>3 · Settings remote (SettingsScreen) — scroll panjang</h2>
-<div class="sub">7 kartu bertumpuk: Approval mode · Budget · Provider · Model routes · Usage · MCP · Danger zone.
-TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke host.</div>
+<h2>3 · Settings remote (SettingsScreen) — menu + FAB nav</h2>
+<div class="sub">Landing = daftar 4 menu: Limit &amp; Usage · Provider &amp; Model · MCP · Actions (Approval mode + Danger zone).
+Navigasi sub-menu via FAB menu (grid) kanan bawah — overlay + floating card, layaknya mission control. TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke host.</div>
 <div class="shelf">
   <div>
-    <div class="lbl"><b>3.1 Settings — atas</b>modes, budget, provider</div>
-    <div class="phone"><div class="screen">
+    <div class="lbl"><b>3.0 Menu — open</b></div>
+    <div class="phone"><div class="screen navopen">
       <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
       <div class="rheader">
-        <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Settings</div>
         <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
       </div>
       <div class="scroll"><div class="pad" style="gap:12px;padding-bottom:32px;">
-
-        <div class="card">
-          <div class="sect">Approval mode</div>
-          <div class="rowline g8">
-            <span class="btn ok" style="flex:1">Safety mode</span>
-            <span class="btn danger outline" style="flex:1">Hardcore mode</span>
+        <div class="card" style="padding:0;">
+        <div class="rowline g12" style="padding:13px 14px;border-bottom:1px solid var(--line);">
+          <svg class="ic"><use href="#i-activity"/></svg>
+          <div style="flex:1">
+            <div class="wtxt f14-5 bold6">Limit &amp; Usage</div>
+            <div class="dim f12" style="margin-top:2px;">Caps, burn rate, spend by persona</div>
           </div>
-          <div class="dim f12 mt10" style="line-height:17px;">Safety: risky tool calls pause and ask you here before running.</div>
+          <svg class="ic" style="width:16px;height:16px;color:var(--faint)"><use href="#i-chev-r"/></svg>
         </div>
-
+        <div class="rowline g12" style="padding:13px 14px;border-bottom:1px solid var(--line);">
+          <svg class="ic"><use href="#i-wrench"/></svg>
+          <div style="flex:1">
+            <div class="wtxt f14-5 bold6">Provider &amp; Model</div>
+            <div class="dim f12" style="margin-top:2px;">Base URL, API key, routes per persona</div>
+          </div>
+          <svg class="ic" style="width:16px;height:16px;color:var(--faint)"><use href="#i-chev-r"/></svg>
+        </div>
+        <div class="rowline g12" style="padding:13px 14px;border-bottom:1px solid var(--line);">
+          <svg class="ic"><use href="#i-plug"/></svg>
+          <div style="flex:1">
+            <div class="wtxt f14-5 bold6">MCP</div>
+            <div class="dim f12" style="margin-top:2px;">Trusted servers, tools, retry</div>
+          </div>
+          <svg class="ic" style="width:16px;height:16px;color:var(--faint)"><use href="#i-chev-r"/></svg>
+        </div>
+        <div class="rowline g12" style="padding:13px 14px;">
+          <svg class="ic"><use href="#i-shield"/></svg>
+          <div style="flex:1">
+            <div class="wtxt f14-5 bold6">Actions</div>
+            <div class="dim f12" style="margin-top:2px;">Approval mode, resets</div>
+          </div>
+          <svg class="ic" style="width:16px;height:16px;color:var(--faint)"><use href="#i-chev-r"/></svg>
+        </div>
+        </div>
+      </div></div>
+      <div class="fabs">
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+      <div class="navcard">
+          <div class="navitem active"><svg class="ic"><use href="#i-activity"/></svg>Limit &amp; Usage</div>
+          <div class="navitem"><svg class="ic"><use href="#i-wrench"/></svg>Provider &amp; Model</div>
+          <div class="navitem"><svg class="ic"><use href="#i-plug"/></svg>MCP</div>
+          <div class="navitem"><svg class="ic"><use href="#i-shield"/></svg>Actions</div>
+        </div>
+      <div class="tabbar"><div class="it"><svg class="ic"><use href="#i-folder"/></svg>Projects</div><div class="it"><svg class="ic"><use href="#i-monitor"/></svg>Screens</div><div class="it active"><svg class="ic"><use href="#i-gear"/></svg>Settings</div></div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+  <div>
+    <div class="lbl"><b>3.1 Settings</b></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Settings</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="scroll"><div class="pad" style="gap:12px;padding-bottom:32px;">
+        <div class="card" style="padding:0;">
+        <div class="rowline g12" style="padding:13px 14px;border-bottom:1px solid var(--line);">
+          <svg class="ic"><use href="#i-activity"/></svg>
+          <div style="flex:1">
+            <div class="wtxt f14-5 bold6">Limit &amp; Usage</div>
+            <div class="dim f12" style="margin-top:2px;">Caps, burn rate, spend by persona</div>
+          </div>
+          <svg class="ic" style="width:16px;height:16px;color:var(--faint)"><use href="#i-chev-r"/></svg>
+        </div>
+        <div class="rowline g12" style="padding:13px 14px;border-bottom:1px solid var(--line);">
+          <svg class="ic"><use href="#i-wrench"/></svg>
+          <div style="flex:1">
+            <div class="wtxt f14-5 bold6">Provider &amp; Model</div>
+            <div class="dim f12" style="margin-top:2px;">Base URL, API key, routes per persona</div>
+          </div>
+          <svg class="ic" style="width:16px;height:16px;color:var(--faint)"><use href="#i-chev-r"/></svg>
+        </div>
+        <div class="rowline g12" style="padding:13px 14px;border-bottom:1px solid var(--line);">
+          <svg class="ic"><use href="#i-plug"/></svg>
+          <div style="flex:1">
+            <div class="wtxt f14-5 bold6">MCP</div>
+            <div class="dim f12" style="margin-top:2px;">Trusted servers, tools, retry</div>
+          </div>
+          <svg class="ic" style="width:16px;height:16px;color:var(--faint)"><use href="#i-chev-r"/></svg>
+        </div>
+        <div class="rowline g12" style="padding:13px 14px;">
+          <svg class="ic"><use href="#i-shield"/></svg>
+          <div style="flex:1">
+            <div class="wtxt f14-5 bold6">Actions</div>
+            <div class="dim f12" style="margin-top:2px;">Approval mode, resets</div>
+          </div>
+          <svg class="ic" style="width:16px;height:16px;color:var(--faint)"><use href="#i-chev-r"/></svg>
+        </div>
+        </div>
+      </div></div>
+      <div class="fabs">
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+      <div class="navcard">
+          <div class="navitem"><svg class="ic"><use href="#i-activity"/></svg>Limit &amp; Usage</div>
+          <div class="navitem"><svg class="ic"><use href="#i-wrench"/></svg>Provider &amp; Model</div>
+          <div class="navitem"><svg class="ic"><use href="#i-plug"/></svg>MCP</div>
+          <div class="navitem"><svg class="ic"><use href="#i-shield"/></svg>Actions</div>
+        </div>
+      <div class="tabbar"><div class="it"><svg class="ic"><use href="#i-folder"/></svg>Projects</div><div class="it"><svg class="ic"><use href="#i-monitor"/></svg>Screens</div><div class="it active"><svg class="ic"><use href="#i-gear"/></svg>Settings</div></div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+  <div>
+    <div class="lbl"><b>3.2 Limit &amp; Usage</b></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back"><svg class="ic"><use href="#i-chev-l"/></svg></div>
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Limit &amp; Usage</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="scroll"><div class="pad" style="gap:12px;padding-bottom:32px;">
         <div class="card">
           <div class="sect">Budget</div>
           <div class="rowline g8" style="margin-bottom:10px;">
@@ -686,7 +795,42 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
           </div>
           <div class="faint f11 mt8">Leave blank for no limit. Currency follows the price book.</div>
         </div>
-
+        <div class="card">
+          <div class="sect">Usage</div>
+          <div class="rowline g8" style="margin-bottom:10px;">
+            <div class="stat"><div class="l">Calls</div><div class="v">412</div></div>
+            <div class="stat"><div class="l">Tokens</div><div class="v">318.4k in</div></div>
+            <div class="stat"><div class="l">Out</div><div class="v">86.2k</div></div>
+          </div>
+          <div class="rowline g8" style="padding:5px 0;"><span data-mascot="yui-coder" data-size="20"></span><div class="wtxt f12-5 flex1">Hiro Yui · claude-sonnet-4.6</div><span class="dim f12">12×</span><span class="wtxt f12">$0.8421</span></div>
+          <div class="rowline g8" style="padding:5px 0;"><span data-mascot="yui-conductor" data-size="20"></span><div class="wtxt f12-5 flex1">Maestro Yui · gpt-5.2</div><span class="dim f12">8×</span><span class="faint f12">unpriced</span></div>
+          <div class="rowline g8" style="padding:5px 0;"><span data-mascot="yui-scholar" data-size="20"></span><div class="wtxt f12-5 flex1">Pierre Yui · gpt-5.2</div><span class="dim f12">6×</span><span class="wtxt f12">$0.2103</span></div>
+        </div>
+      </div></div>
+      <div class="fabs">
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+      <div class="navcard">
+          <div class="navitem active"><svg class="ic"><use href="#i-activity"/></svg>Limit &amp; Usage</div>
+          <div class="navitem"><svg class="ic"><use href="#i-wrench"/></svg>Provider &amp; Model</div>
+          <div class="navitem"><svg class="ic"><use href="#i-plug"/></svg>MCP</div>
+          <div class="navitem"><svg class="ic"><use href="#i-shield"/></svg>Actions</div>
+        </div>
+      <div class="tabbar"><div class="it"><svg class="ic"><use href="#i-folder"/></svg>Projects</div><div class="it"><svg class="ic"><use href="#i-monitor"/></svg>Screens</div><div class="it active"><svg class="ic"><use href="#i-gear"/></svg>Settings</div></div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+  <div>
+    <div class="lbl"><b>3.3 Provider &amp; Model</b></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back"><svg class="ic"><use href="#i-chev-l"/></svg></div>
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Provider &amp; Model</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="scroll"><div class="pad" style="gap:12px;padding-bottom:32px;">
         <div class="card">
           <div class="sect">Provider</div>
           <div class="rowline g8" style="margin-bottom:10px;">
@@ -703,7 +847,6 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
             <span class="dim f12" style="flex:1">Saved — host applied the new provider</span>
           </div>
         </div>
-
         <div class="card">
           <div class="sect">Model routes</div>
           <div class="dim f12" style="margin-bottom:10px;">Default: gpt-5.2 (fallback gpt-5-mini)</div>
@@ -730,19 +873,31 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
           <div class="dim f12">Route saved</div>
           <div class="faint f11" style="margin-top:6px;">Clear the field and save to fall back to the default model.</div>
         </div>
-
-        <div class="card">
-          <div class="sect">Usage</div>
-          <div class="rowline g8" style="margin-bottom:10px;">
-            <div class="stat"><div class="l">Calls</div><div class="v">412</div></div>
-            <div class="stat"><div class="l">Tokens</div><div class="v">318.4k in</div></div>
-            <div class="stat"><div class="l">Out</div><div class="v">86.2k</div></div>
-          </div>
-          <div class="rowline g8" style="padding:5px 0;"><span data-mascot="yui-coder" data-size="20"></span><div class="wtxt f12-5 flex1">Hiro Yui · claude-sonnet-4.6</div><span class="dim f12">12×</span><span class="wtxt f12">$0.8421</span></div>
-          <div class="rowline g8" style="padding:5px 0;"><span data-mascot="yui-conductor" data-size="20"></span><div class="wtxt f12-5 flex1">Maestro Yui · gpt-5.2</div><span class="dim f12">8×</span><span class="faint f12">unpriced</span></div>
-          <div class="rowline g8" style="padding:5px 0;"><span data-mascot="yui-scholar" data-size="20"></span><div class="wtxt f12-5 flex1">Pierre Yui · gpt-5.2</div><span class="dim f12">6×</span><span class="wtxt f12">$0.2103</span></div>
+      </div></div>
+      <div class="fabs">
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
         </div>
-
+      <div class="navovl"></div>
+      <div class="navcard">
+          <div class="navitem"><svg class="ic"><use href="#i-activity"/></svg>Limit &amp; Usage</div>
+          <div class="navitem active"><svg class="ic"><use href="#i-wrench"/></svg>Provider &amp; Model</div>
+          <div class="navitem"><svg class="ic"><use href="#i-plug"/></svg>MCP</div>
+          <div class="navitem"><svg class="ic"><use href="#i-shield"/></svg>Actions</div>
+        </div>
+      <div class="tabbar"><div class="it"><svg class="ic"><use href="#i-folder"/></svg>Projects</div><div class="it"><svg class="ic"><use href="#i-monitor"/></svg>Screens</div><div class="it active"><svg class="ic"><use href="#i-gear"/></svg>Settings</div></div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+  <div>
+    <div class="lbl"><b>3.4 MCP</b></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back"><svg class="ic"><use href="#i-chev-l"/></svg></div>
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">MCP</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="scroll"><div class="pad" style="gap:12px;padding-bottom:32px;">
         <div class="card">
           <div class="sect">MCP servers</div>
           <div style="margin-bottom:10px;">
@@ -756,7 +911,39 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
             <div class="rowline g8 mt6"><span class="btn outline small">Retry</span><span class="btn ok outline small">Trust</span></div>
           </div>
         </div>
-
+      </div></div>
+      <div class="fabs">
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+      <div class="navcard">
+          <div class="navitem"><svg class="ic"><use href="#i-activity"/></svg>Limit &amp; Usage</div>
+          <div class="navitem"><svg class="ic"><use href="#i-wrench"/></svg>Provider &amp; Model</div>
+          <div class="navitem active"><svg class="ic"><use href="#i-plug"/></svg>MCP</div>
+          <div class="navitem"><svg class="ic"><use href="#i-shield"/></svg>Actions</div>
+        </div>
+      <div class="tabbar"><div class="it"><svg class="ic"><use href="#i-folder"/></svg>Projects</div><div class="it"><svg class="ic"><use href="#i-monitor"/></svg>Screens</div><div class="it active"><svg class="ic"><use href="#i-gear"/></svg>Settings</div></div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+  <div>
+    <div class="lbl"><b>3.5 Actions</b></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back"><svg class="ic"><use href="#i-chev-l"/></svg></div>
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Actions</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="scroll"><div class="pad" style="gap:12px;padding-bottom:32px;">
+        <div class="card">
+          <div class="sect">Approval mode</div>
+          <div class="rowline g8">
+            <span class="btn ok" style="flex:1">Safety mode</span>
+            <span class="btn danger outline" style="flex:1">Hardcore mode</span>
+          </div>
+          <div class="dim f12 mt10" style="line-height:17px;">Safety: risky tool calls pause and ask you here before running.</div>
+        </div>
         <div class="card" style="border-color:#5c2a2a;">
           <div class="sect">Danger zone</div>
           <div class="rowline g8" style="margin-bottom:10px;">
@@ -767,8 +954,17 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
           <div class="field"><label>Type "RESET" to confirm</label><div class="input mono" style="color:var(--faint)">RESET</div></div>
           <div class="mt10"><span class="btn danger small disabled">Run reset</span></div>
         </div>
-
       </div></div>
+      <div class="fabs">
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+      <div class="navcard">
+          <div class="navitem"><svg class="ic"><use href="#i-activity"/></svg>Limit &amp; Usage</div>
+          <div class="navitem"><svg class="ic"><use href="#i-wrench"/></svg>Provider &amp; Model</div>
+          <div class="navitem"><svg class="ic"><use href="#i-plug"/></svg>MCP</div>
+          <div class="navitem active"><svg class="ic"><use href="#i-shield"/></svg>Actions</div>
+        </div>
       <div class="tabbar"><div class="it"><svg class="ic"><use href="#i-folder"/></svg>Projects</div><div class="it"><svg class="ic"><use href="#i-monitor"/></svg>Screens</div><div class="it active"><svg class="ic"><use href="#i-gear"/></svg>Settings</div></div>
       <div class="homebar"></div>
     </div></div>
@@ -1178,7 +1374,7 @@ Tap menu → overlay + floating card muncul (spring + stagger), pilih item → o
   </div>
 
   <div>
-    <div class="lbl"><b>4.8 Terminal — attached</b>replay 16 KB ekor + input + Run</div>
+    <div class="lbl"><b>4.8 Terminal — attached</b>replay 16 KB ekor + input + send icon</div>
     <div class="phone"><div class="screen">
       <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
       <div class="rheader">
@@ -1215,7 +1411,7 @@ C:\work\katalog&gt;npm run build
 C:\work\katalog&gt;_</div>
         <div class="rowline g8">
           <div style="flex:1;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--faint);">Type a command…</div>
-          <span class="btn small">Run</span>
+          <span class="btn small" style="padding:8px;"><svg class="ic" style="width:18px;height:18px"><use href="#i-send"/></svg></span>
         </div>
       </div>
       <div class="fabs">
