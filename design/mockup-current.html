@@ -138,6 +138,37 @@ h2{font-size:17px; margin:42px 0 4px; color:var(--text);}
 .tabbar .it .ic{width:21px; height:21px;}
 .tabbar .it.active{color:var(--accent); font-weight:700;}
 
+/* ── FAB cluster + nav overlay (ProjectScreen) ── */
+.fabs{position:absolute; right:16px; bottom:30px; display:flex; flex-direction:column; align-items:flex-end; gap:12px; z-index:50;}
+.fab{width:48px; height:48px; border-radius:999px; background:var(--accent); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 10px 26px rgba(0,124,247,.38);}
+.fabmenu{width:48px; height:48px; border-radius:999px; background:var(--surface); border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center; color:var(--text);
+  box-shadow:0 8px 22px rgba(0,0,0,.42); position:relative;}
+.fabmenu .fg,.fabmenu .fx{transition:opacity .2s ease, transform .28s cubic-bezier(.2,.8,.3,1.2);}
+.fabmenu .fx{position:absolute; opacity:0; transform:rotate(-90deg) scale(.6);}
+.navovl{position:absolute; inset:0; background:rgba(0,0,0,.55); z-index:55; opacity:0; pointer-events:none; transition:opacity .22s ease;}
+.navcard{position:absolute; right:16px; bottom:92px; width:228px; background:var(--surface); border:1px solid var(--line);
+  border-radius:16px; padding:8px; z-index:56; box-shadow:0 18px 44px rgba(0,0,0,.55);
+  opacity:0; transform:translateY(16px) scale(.9); transform-origin:100% 100%; pointer-events:none;
+  transition:opacity .22s ease, transform .3s cubic-bezier(.2,.9,.3,1.15);}
+.navcard .navitem{display:flex; align-items:center; gap:12px; height:44px; padding:0 12px; border-radius:10px;
+  color:var(--dim); font-size:13.5px; font-weight:600;}
+.navcard .navitem .ic{width:20px; height:20px;}
+.navcard .navitem.active{background:var(--accent-soft); color:var(--accent);}
+.navcard .navitem{opacity:0; transform:translateX(12px); transition:opacity .2s ease, transform .28s cubic-bezier(.2,.8,.3,1);}
+.navcard .navitem:nth-child(1){transition-delay:.02s}.navcard .navitem:nth-child(2){transition-delay:.05s}
+.navcard .navitem:nth-child(3){transition-delay:.08s}.navcard .navitem:nth-child(4){transition-delay:.11s}
+.navcard .navitem:nth-child(5){transition-delay:.14s}.navcard .navitem:nth-child(6){transition-delay:.17s}
+.navcard .navitem:nth-child(7){transition-delay:.2s}
+.screen.navopen .navovl{opacity:1; pointer-events:auto;}
+.screen.navopen .navcard{opacity:1; transform:none; pointer-events:auto;}
+.screen.navopen .navcard .navitem{opacity:1; transform:none;}
+.screen.navopen .fabmenu{background:var(--inset);}
+.screen.navopen .fabmenu .fg{opacity:0; transform:rotate(90deg) scale(.6);}
+.screen.navopen .fabmenu .fx{opacity:1; transform:none;}
+
 /* ── list content ── */
 .pad{padding:16px; display:flex; flex-direction:column; gap:12px; padding-bottom:24px;}
 .rowline{display:flex; align-items:center;}
@@ -247,6 +278,13 @@ table.tk th{color:var(--text); font-weight:600;}
     <symbol id="i-chev-d" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></g></symbol>
     <symbol id="i-chev-l" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></g></symbol>
     <symbol id="i-folder" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></g></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></g></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></g></symbol>
+    <symbol id="i-message" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></g></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4M3 7l2 2 4-4M13 6h8M13 12h8M13 18h8"/></g></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></g></symbol>
+    <symbol id="i-activity" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></g></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 17 6-6-6-6M12 19h8"/></g></symbol>
     <symbol id="i-gear" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></g></symbol>
   </defs>
 </svg>
@@ -734,11 +772,44 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
 
 <!-- ════════════════ 4. PROJECT MISSION CONTROL ════════════════ -->
 <h2>4 · Project mission control (ProjectScreen) — 7 tab</h2>
-<div class="sub">Tab chips horizontal (scroll). Footer nama project. Konten tiap tab: fetch saat mount + skeleton + pull-to-refresh.</div>
+<div class="sub">Tanpa tab chips di header. Navigasi via dua FAB round kanan bawah: new chat (icon plus, accent — hanya di tab Chat) + menu (icon grid).
+Tap menu → overlay + floating card muncul (spring + stagger), pilih item → overlay tutup + pindah tab. Footer nama project. Konten tiap tab: fetch saat mount + skeleton + pull-to-refresh.</div>
 <div class="shelf stack-shelf">
 
   <div>
-    <div class="lbl"><b>4.1 Chat</b>daftar sesi project + tombol new chat</div>
+    <div class="lbl"><b>4.0 Menu — open</b>overlay + floating nav card (FAB menu aktif)</div>
+    <div class="phone"><div class="screen navopen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back"><svg class="ic"><use href="#i-chev-l"/></svg></div>
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="scroll"><div class="pad">
+        <div class="card"><div class="rowline g12"><span data-mascot="yui-coder" data-size="38"></span><div style="flex:1"><div class="wtxt f14-5 bold6">Build landing page sections</div><div class="dim f12">Hiro Yui</div></div><span class="faint f11">14:05</span></div></div>
+        <div class="card"><div class="rowline g12"><span data-mascot="yui-scholar" data-size="38"></span><div style="flex:1"><div class="wtxt f14-5 bold6">Research kompetitor kafe</div><div class="dim f12">Pierre Yui</div></div><span class="faint f11">11:20</span></div></div>
+      </div></div>
+      <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
+      <div class="fabs">
+          <div class="fab"><svg class="ic"><use href="#i-plus"/></svg></div>
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+      <div class="navcard">
+          <div class="navitem active"><svg class="ic"><use href="#i-message"/></svg>Chat</div>
+          <div class="navitem"><svg class="ic"><use href="#i-list"/></svg>Tasks</div>
+          <div class="navitem"><svg class="ic"><use href="#i-folder"/></svg>Files</div>
+          <div class="navitem"><svg class="ic"><use href="#i-users"/></svg>Team</div>
+          <div class="navitem"><svg class="ic"><use href="#i-activity"/></svg>Activity</div>
+          <div class="navitem"><svg class="ic"><use href="#i-terminal"/></svg>Terminal</div>
+          <div class="navitem"><svg class="ic"><use href="#i-globe"/></svg>Browser</div>
+        </div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>4.1 Chat</b>daftar sesi project + FAB new chat</div>
     <div class="phone"><div class="screen">
       <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
       <div class="rheader">
@@ -746,12 +817,7 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
         <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
         <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
       </div>
-      <div class="tabchips">
-        <span class="chip accent active">Chat</span><span class="chip accent">Tasks</span><span class="chip accent">Files</span>
-        <span class="chip accent">Team</span><span class="chip accent">Activity</span><span class="chip accent">Terminal</span><span class="chip accent">Browser</span>
-      </div>
-      <div class="scroll"><div class="pad">
-        <span class="btn">+ New chat</span>
+            <div class="scroll"><div class="pad">
         <div class="card">
           <div class="rowline g12">
             <span data-mascot="yui-coder" data-size="38"></span>
@@ -783,6 +849,20 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
           </div>
         </div>
       </div></div>
+      <div class="fabs">
+          <div class="fab"><svg class="ic"><use href="#i-plus"/></svg></div>
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+<div class="navcard">
+          <div class="navitem active"><svg class="ic"><use href="#i-message"/></svg>Chat</div>
+          <div class="navitem"><svg class="ic"><use href="#i-list"/></svg>Tasks</div>
+          <div class="navitem"><svg class="ic"><use href="#i-folder"/></svg>Files</div>
+          <div class="navitem"><svg class="ic"><use href="#i-users"/></svg>Team</div>
+          <div class="navitem"><svg class="ic"><use href="#i-activity"/></svg>Activity</div>
+          <div class="navitem"><svg class="ic"><use href="#i-terminal"/></svg>Terminal</div>
+          <div class="navitem"><svg class="ic"><use href="#i-globe"/></svg>Browser</div>
+        </div>
       <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
       <div class="homebar"></div>
     </div></div>
@@ -796,10 +876,7 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
         <div class="back"><svg class="ic"><use href="#i-chev-l"/></svg></div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
         <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
       </div>
-      <div class="tabchips" style="opacity:.2;">
-        <span class="chip accent active">Chat</span><span class="chip accent">Tasks</span>
-      </div>
-      <div class="scroll" style="opacity:.15;"><div class="pad"><div class="card"><div class="wtxt f14-5 bold6">Build landing page sections</div></div></div></div>
+            <div class="scroll" style="opacity:.15;"><div class="pad"><div class="card"><div class="wtxt f14-5 bold6">Build landing page sections</div></div></div></div>
       <div class="scrim">
         <div class="sheet">
           <div class="shead"><span>Start a new chat</span><span class="x">×</span></div>
@@ -811,6 +888,20 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
           </div>
         </div>
       </div>
+      <div class="fabs">
+          <div class="fab"><svg class="ic"><use href="#i-plus"/></svg></div>
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+<div class="navcard">
+          <div class="navitem active"><svg class="ic"><use href="#i-message"/></svg>Chat</div>
+          <div class="navitem"><svg class="ic"><use href="#i-list"/></svg>Tasks</div>
+          <div class="navitem"><svg class="ic"><use href="#i-folder"/></svg>Files</div>
+          <div class="navitem"><svg class="ic"><use href="#i-users"/></svg>Team</div>
+          <div class="navitem"><svg class="ic"><use href="#i-activity"/></svg>Activity</div>
+          <div class="navitem"><svg class="ic"><use href="#i-terminal"/></svg>Terminal</div>
+          <div class="navitem"><svg class="ic"><use href="#i-globe"/></svg>Browser</div>
+        </div>
       <div class="homebar"></div>
     </div></div>
   </div>
@@ -823,11 +914,7 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
         <div class="back"><svg class="ic"><use href="#i-chev-l"/></svg></div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
         <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
       </div>
-      <div class="tabchips">
-        <span class="chip accent">Chat</span><span class="chip accent active">Tasks</span><span class="chip accent">Files</span>
-        <span class="chip accent">Team</span><span class="chip accent">Activity</span><span class="chip accent">Terminal</span><span class="chip accent">Browser</span>
-      </div>
-      <div class="scroll"><div class="pad">
+            <div class="scroll"><div class="pad">
         <div class="dim f12-5">8 tasks</div>
         <div>
           <div class="rowline g8" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:6px;">
@@ -865,6 +952,19 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
           </div>
         </div>
       </div></div>
+      <div class="fabs">
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+<div class="navcard">
+          <div class="navitem"><svg class="ic"><use href="#i-message"/></svg>Chat</div>
+          <div class="navitem active"><svg class="ic"><use href="#i-list"/></svg>Tasks</div>
+          <div class="navitem"><svg class="ic"><use href="#i-folder"/></svg>Files</div>
+          <div class="navitem"><svg class="ic"><use href="#i-users"/></svg>Team</div>
+          <div class="navitem"><svg class="ic"><use href="#i-activity"/></svg>Activity</div>
+          <div class="navitem"><svg class="ic"><use href="#i-terminal"/></svg>Terminal</div>
+          <div class="navitem"><svg class="ic"><use href="#i-globe"/></svg>Browser</div>
+        </div>
       <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
       <div class="homebar"></div>
     </div></div>
@@ -878,11 +978,7 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
         <div class="back"><svg class="ic"><use href="#i-chev-l"/></svg></div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
         <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
       </div>
-      <div class="tabchips">
-        <span class="chip accent">Chat</span><span class="chip accent">Tasks</span><span class="chip accent active">Files</span>
-        <span class="chip accent">Team</span><span class="chip accent">Activity</span><span class="chip accent">Terminal</span><span class="chip accent">Browser</span>
-      </div>
-      <div class="scroll"><div class="pad" style="gap:0;">
+            <div class="scroll"><div class="pad" style="gap:0;">
         <div class="rowline g8" style="padding:7px 0;">
           <span style="color:var(--warn);width:16px;display:inline-flex;align-items:center;"><svg class="ic" style="width:16px;height:16px"><use href="#i-chev-d"/></svg></span><span class="wtxt f13-5 flex1">src</span>
         </div>
@@ -904,6 +1000,19 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
           <span class="dim f13" style="width:16px;">·</span><span class="wtxt f13-5 flex1 mono">TASKS.md</span><span class="faint f11">12.6 KB</span>
         </div>
       </div></div>
+      <div class="fabs">
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+<div class="navcard">
+          <div class="navitem"><svg class="ic"><use href="#i-message"/></svg>Chat</div>
+          <div class="navitem"><svg class="ic"><use href="#i-list"/></svg>Tasks</div>
+          <div class="navitem active"><svg class="ic"><use href="#i-folder"/></svg>Files</div>
+          <div class="navitem"><svg class="ic"><use href="#i-users"/></svg>Team</div>
+          <div class="navitem"><svg class="ic"><use href="#i-activity"/></svg>Activity</div>
+          <div class="navitem"><svg class="ic"><use href="#i-terminal"/></svg>Terminal</div>
+          <div class="navitem"><svg class="ic"><use href="#i-globe"/></svg>Browser</div>
+        </div>
       <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
       <div class="homebar"></div>
     </div></div>
@@ -917,11 +1026,7 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
         <div class="back"><svg class="ic"><use href="#i-chev-l"/></svg></div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
         <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
       </div>
-      <div class="tabchips">
-        <span class="chip accent">Chat</span><span class="chip accent">Tasks</span><span class="chip accent">Files</span>
-        <span class="chip accent active">Team</span><span class="chip accent">Activity</span><span class="chip accent">Terminal</span><span class="chip accent">Browser</span>
-      </div>
-      <div class="scroll"><div class="pad">
+            <div class="scroll"><div class="pad">
         <div class="sect" style="margin-top:0;">Team</div>
         <div class="card"><div class="rowline g12">
           <span data-mascot="yui-coder" data-size="40"></span>
@@ -953,6 +1058,19 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
           </div>
         </div>
       </div></div>
+      <div class="fabs">
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+<div class="navcard">
+          <div class="navitem"><svg class="ic"><use href="#i-message"/></svg>Chat</div>
+          <div class="navitem"><svg class="ic"><use href="#i-list"/></svg>Tasks</div>
+          <div class="navitem"><svg class="ic"><use href="#i-folder"/></svg>Files</div>
+          <div class="navitem active"><svg class="ic"><use href="#i-users"/></svg>Team</div>
+          <div class="navitem"><svg class="ic"><use href="#i-activity"/></svg>Activity</div>
+          <div class="navitem"><svg class="ic"><use href="#i-terminal"/></svg>Terminal</div>
+          <div class="navitem"><svg class="ic"><use href="#i-globe"/></svg>Browser</div>
+        </div>
       <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
       <div class="homebar"></div>
     </div></div>
@@ -966,11 +1084,7 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
         <div class="back"><svg class="ic"><use href="#i-chev-l"/></svg></div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
         <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
       </div>
-      <div class="tabchips">
-        <span class="chip accent">Chat</span><span class="chip accent">Tasks</span><span class="chip accent">Files</span>
-        <span class="chip accent">Team</span><span class="chip accent active">Activity</span><span class="chip accent">Terminal</span><span class="chip accent">Browser</span>
-      </div>
-      <div class="scroll"><div class="pad" style="gap:10px;">
+            <div class="scroll"><div class="pad" style="gap:10px;">
         <div class="rowline g10" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px;align-items:flex-start;">
           <span class="faint" style="width:20px;display:inline-flex;align-items:center;"><svg class="ic"><use href="#i-wrench"/></svg></span>
           <div style="flex:1">
@@ -1007,6 +1121,19 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
           </div>
         </div>
       </div></div>
+      <div class="fabs">
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+<div class="navcard">
+          <div class="navitem"><svg class="ic"><use href="#i-message"/></svg>Chat</div>
+          <div class="navitem"><svg class="ic"><use href="#i-list"/></svg>Tasks</div>
+          <div class="navitem"><svg class="ic"><use href="#i-folder"/></svg>Files</div>
+          <div class="navitem"><svg class="ic"><use href="#i-users"/></svg>Team</div>
+          <div class="navitem active"><svg class="ic"><use href="#i-activity"/></svg>Activity</div>
+          <div class="navitem"><svg class="ic"><use href="#i-terminal"/></svg>Terminal</div>
+          <div class="navitem"><svg class="ic"><use href="#i-globe"/></svg>Browser</div>
+        </div>
       <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
       <div class="homebar"></div>
     </div></div>
@@ -1020,17 +1147,26 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
         <div class="back"><svg class="ic"><use href="#i-chev-l"/></svg></div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
         <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
       </div>
-      <div class="tabchips">
-        <span class="chip accent">Chat</span><span class="chip accent">Tasks</span><span class="chip accent">Files</span>
-        <span class="chip accent">Team</span><span class="chip accent">Activity</span><span class="chip accent active">Terminal</span><span class="chip accent">Browser</span>
-      </div>
-      <div class="scroll"><div class="pad">
+            <div class="scroll"><div class="pad">
         <div class="card">
           <div class="wtxt f14-5 bold6">Project terminal</div>
           <div class="dim f12-5 mt6" style="line-height:18px;">Opens a shell at this project workspace on the host. Shared with the studio: detaching on your phone keeps it alive.</div>
           <div class="mt12"><span class="btn">Open terminal</span></div>
         </div>
       </div></div>
+      <div class="fabs">
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+<div class="navcard">
+          <div class="navitem"><svg class="ic"><use href="#i-message"/></svg>Chat</div>
+          <div class="navitem"><svg class="ic"><use href="#i-list"/></svg>Tasks</div>
+          <div class="navitem"><svg class="ic"><use href="#i-folder"/></svg>Files</div>
+          <div class="navitem"><svg class="ic"><use href="#i-users"/></svg>Team</div>
+          <div class="navitem"><svg class="ic"><use href="#i-activity"/></svg>Activity</div>
+          <div class="navitem active"><svg class="ic"><use href="#i-terminal"/></svg>Terminal</div>
+          <div class="navitem"><svg class="ic"><use href="#i-globe"/></svg>Browser</div>
+        </div>
       <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
       <div class="homebar"></div>
     </div></div>
@@ -1044,11 +1180,7 @@ TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke hos
         <div class="back"><svg class="ic"><use href="#i-chev-l"/></svg></div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
         <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
       </div>
-      <div class="tabchips">
-        <span class="chip accent">Chat</span><span class="chip accent">Tasks</span><span class="chip accent">Files</span>
-        <span class="chip accent">Team</span><span class="chip accent">Activity</span><span class="chip accent active">Terminal</span><span class="chip accent">Browser</span>
-      </div>
-      <div style="flex:1;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:0;">
+            <div style="flex:1;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:0;">
         <div class="rowline g8">
           <span class="chip ok">live</span>
           <span class="faint f11 flex1 mono">term-7f3a</span>
@@ -1081,6 +1213,19 @@ C:\work\katalog&gt;_</div>
           <span class="btn small">Run</span>
         </div>
       </div>
+      <div class="fabs">
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+<div class="navcard">
+          <div class="navitem"><svg class="ic"><use href="#i-message"/></svg>Chat</div>
+          <div class="navitem"><svg class="ic"><use href="#i-list"/></svg>Tasks</div>
+          <div class="navitem"><svg class="ic"><use href="#i-folder"/></svg>Files</div>
+          <div class="navitem"><svg class="ic"><use href="#i-users"/></svg>Team</div>
+          <div class="navitem"><svg class="ic"><use href="#i-activity"/></svg>Activity</div>
+          <div class="navitem active"><svg class="ic"><use href="#i-terminal"/></svg>Terminal</div>
+          <div class="navitem"><svg class="ic"><use href="#i-globe"/></svg>Browser</div>
+        </div>
       <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
       <div class="homebar"></div>
     </div></div>
@@ -1094,11 +1239,7 @@ C:\work\katalog&gt;_</div>
         <div class="back"><svg class="ic"><use href="#i-chev-l"/></svg></div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
         <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
       </div>
-      <div class="tabchips">
-        <span class="chip accent">Chat</span><span class="chip accent">Tasks</span><span class="chip accent">Files</span>
-        <span class="chip accent">Team</span><span class="chip accent">Activity</span><span class="chip accent">Terminal</span><span class="chip accent active">Browser</span>
-      </div>
-      <div class="scroll"><div class="pad" style="gap:10px;">
+            <div class="scroll"><div class="pad" style="gap:10px;">
         <div class="card">
           <div class="rowline g12">
             <span data-mascot="yui-coder" data-size="38"></span>
@@ -1111,6 +1252,19 @@ C:\work\katalog&gt;_</div>
         </div>
         <div class="empty"><div class="t">No live browser screens</div><div class="b">Screens opened by personas in this project stream here. Ask a persona to browse first.</div></div>
       </div></div>
+      <div class="fabs">
+          <div class="fabmenu"><svg class="ic fg"><use href="#i-grid"/></svg><svg class="ic fx"><use href="#i-x"/></svg></div>
+        </div>
+      <div class="navovl"></div>
+<div class="navcard">
+          <div class="navitem"><svg class="ic"><use href="#i-message"/></svg>Chat</div>
+          <div class="navitem"><svg class="ic"><use href="#i-list"/></svg>Tasks</div>
+          <div class="navitem"><svg class="ic"><use href="#i-folder"/></svg>Files</div>
+          <div class="navitem"><svg class="ic"><use href="#i-users"/></svg>Team</div>
+          <div class="navitem"><svg class="ic"><use href="#i-activity"/></svg>Activity</div>
+          <div class="navitem"><svg class="ic"><use href="#i-terminal"/></svg>Terminal</div>
+          <div class="navitem active"><svg class="ic"><use href="#i-globe"/></svg>Browser</div>
+        </div>
       <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
       <div class="homebar"></div>
     </div></div>
@@ -1443,6 +1597,19 @@ for(const key of SHAPE_ORDER){
   d.innerHTML=shapeSVG(key,40)+`<div>${sh.name}<br><span>${key} · ${sh.color}</span></div>`;
   board2.appendChild(d);
 }
+
+// ── nav menu FAB (ProjectScreen): toggle overlay + floating nav ──
+document.querySelectorAll(".fabs .fabmenu").forEach(btn=>{
+  const scr=btn.closest(".screen"); if(!scr) return;
+  btn.addEventListener("click",e=>{e.stopPropagation(); scr.classList.toggle("navopen");});
+  const ovl=scr.querySelector(".navovl");
+  if(ovl) ovl.addEventListener("click",()=>scr.classList.remove("navopen"));
+  scr.querySelectorAll(".navcard .navitem").forEach(it=>it.addEventListener("click",()=>{
+    scr.querySelectorAll(".navcard .navitem").forEach(n=>n.classList.remove("active"));
+    it.classList.add("active"); scr.classList.remove("navopen");
+  }));
+});
+
 </script>
 </body>
 </html>
