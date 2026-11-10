@@ -1,0 +1,1329 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yuika Mobile — Mockup UI Existing (remote v1.2 mission control)</title>
+<style>
+/* ════════════════════════════════════════════════════════════════════
+   MOCKUP 1:1 dari kode React Native aktual (d:/projects/yuika-mobile).
+   Semua warna, radius, font-size, dan padding diambil PERSIS dari:
+   - src/theme.ts        (token C dan R)
+   - src/ui.tsx          (Card, Chip, Btn, Field, EmptyState, ErrorBox, Sheet)
+   - App.tsx             (boot / login / hosts)
+   - src/remote/RemoteProvider.tsx  (status header, tab bar, approvals overlay)
+   - src/screens/*.tsx   (semua layar)
+   - src/components/*    (Mascot, Markdown, Skeleton)
+   Ukuran frame 390x844 px = 1:1 dengan dp React Native. Konten dalam frame
+   bisa di-scroll (seperti di HP sungguhan).
+   ════════════════════════════════════════════════════════════════════ */
+:root{
+  --canvas:#1a1a1a; --surface:#212121; --inset:#101010; --line:#2e2e2e;
+  --text:#f5f5f5; --dim:#9e9e9e; --faint:#616161;
+  --accent:#007cf7; --accent-soft:#0d2b4d;
+  --ok:#3ddc84; --warn:#e6a23c; --danger:#ff5c5c; --danger-soft:#2a1a1a;
+  --code:#141414; --mono-bg:#171717; --term:#0d0d0d; --term-text:#d7e3f4;
+  --r-card:14px; --r-chip:999px; --r-input:10px; --r-bubble:14px;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  background:#0a0a0a; color:var(--text);
+  font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  font-size:14px; line-height:1.35; padding:32px 28px 80px;
+}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+
+/* ── layout halaman ── */
+h1{font-size:26px; margin-bottom:6px;}
+h2{font-size:17px; margin:42px 0 4px; color:var(--text);}
+.sub{color:var(--dim); font-size:13px; margin-bottom:18px; max-width:900px;}
+.shelf{display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start;}
+.stack-shelf .phone{margin-bottom:0;}
+.note{max-width:920px; background:#141414; border:1px solid var(--line); border-radius:12px;
+  padding:14px 16px; color:var(--dim); font-size:12.5px; line-height:19px; margin:14px 0;}
+.note b{color:var(--text); font-weight:600;}
+.note code{color:#8ec4ff; font-size:11.5px;}
+
+/* ── phone frame ── */
+.phone{
+  width:390px; height:844px; border-radius:44px; background:#000;
+  border:10px solid #1c1c1c; box-shadow:0 18px 50px rgba(0,0,0,.55);
+  overflow:hidden; position:relative; flex-shrink:0;
+}
+.phone .screen{position:absolute; inset:0; background:var(--canvas); display:flex; flex-direction:column; overflow:hidden;}
+.phone .statusbar{
+  height:44px; flex-shrink:0; display:flex; align-items:flex-end; justify-content:space-between;
+  padding:0 26px 4px; color:#fff; font-size:13px; font-weight:600;
+}
+.phone .statusbar .r{display:flex; gap:5px; align-items:center; color:#cfcfcf; font-size:11px; font-weight:400;}
+.scroll{flex:1; overflow-y:auto; scrollbar-width:none;}
+.scroll::-webkit-scrollbar{display:none;}
+.lbl{margin:10px 0 10px; font-size:12.5px; color:var(--dim);}
+.lbl b{color:var(--text); font-size:13px; display:block; margin-bottom:2px;}
+.homebar{position:absolute; bottom:7px; left:50%; transform:translateX(-50%);
+  width:130px; height:5px; border-radius:3px; background:rgba(255,255,255,.28); z-index:5; pointer-events:none;}
+
+/* ── primitif (port ui.tsx) ── */
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-card); padding:14px;}
+.sect{color:var(--dim); font-size:11px; text-transform:uppercase; letter-spacing:1.2px; margin:6px 0 8px;}
+.chip{display:inline-flex; align-items:center; border-radius:var(--r-chip); padding:4px 10px;
+  font-size:11.5px; font-weight:600; align-self:flex-start; line-height:1.25;}
+.chip.dim{color:var(--dim); border:1px solid var(--line);}
+.chip.accent{color:var(--accent); border:1px solid var(--line);}
+.chip.ok{color:var(--ok); border:1px solid var(--line);}
+.chip.warn{color:var(--warn); border:1px solid var(--line);}
+.chip.danger{color:var(--danger); border:1px solid var(--line);}
+.chip.active{background:var(--accent-soft); border-color:var(--accent);}
+.chip.solid-accent{background:var(--accent); color:#fff; border:none;}
+.btn{display:flex; align-items:center; justify-content:center; border-radius:10px;
+  padding:11px 18px; font-size:14px; font-weight:700; color:#fff; background:var(--accent); text-align:center;}
+.btn.small{padding:7px 12px; font-size:12.5px;}
+.btn.outline{background:transparent; border:1px solid var(--accent); color:var(--accent);}
+.btn.danger{background:var(--danger);}
+.btn.danger.outline{background:transparent; border:1px solid var(--danger); color:var(--danger);}
+.btn.ok{background:var(--ok);} .btn.ok.outline{background:transparent; border:1px solid var(--ok); color:var(--ok);}
+.btn.dim-outline{background:transparent; border:1px solid var(--dim); color:var(--dim);}
+.btn.disabled{opacity:.45;}
+.field label{display:block; color:var(--dim); font-size:12px; margin-bottom:4px;}
+.field .input{color:var(--text); background:var(--inset); border:1px solid var(--line);
+  border-radius:var(--r-input); padding:9px 11px; font-size:14px;}
+.field .input.mono{font-size:12.5px;}
+.field .input::placeholder{color:var(--faint);}
+.field .hint{color:var(--faint); font-size:11px; margin-top:4px;}
+.empty{display:flex; flex-direction:column; align-items:center; padding:40px 24px; gap:6px; text-align:center;}
+.empty .t{color:var(--text); font-size:14.5px; font-weight:600;}
+.empty .b{color:var(--dim); font-size:12.5px; line-height:18px;}
+.errbox{background:var(--danger-soft); border:1px solid #5c2a2a; border-radius:10px; padding:10px 12px;
+  color:var(--danger); font-size:12.5px;}
+.stat{flex:1; background:var(--inset); border-radius:10px; padding:10px;}
+.stat .l{color:var(--faint); font-size:10.5px; text-transform:uppercase; letter-spacing:1px;}
+.stat .v{color:var(--text); font-size:14px; font-weight:700; margin-top:3px;}
+.stat .v.warn{color:var(--warn);}
+
+/* ── skeleton (port Skeleton.tsx) ── */
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+.bar{background:var(--faint); border-radius:6px; animation:pulse 1.3s ease-in-out infinite;}
+.skelcard{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-card); padding:14px; display:flex; flex-direction:column; gap:10px;}
+.skelrow{display:flex; align-items:center; gap:10px;}
+
+/* ── header remote (RemoteProvider) ── */
+.rheader{display:flex; align-items:center; gap:10px; padding:14px 16px 10px; flex-shrink:0;}
+.rheader .back{width:34px; height:34px; border-radius:10px; background:var(--surface); border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--text); line-height:1; margin-top:-2px;}
+.rheader .name{color:var(--text); font-size:17px; font-weight:700; flex:1; white-space:nowrap; overflow:hidden;}
+.rheader .dot{width:9px; height:9px; border-radius:5px;}
+.rheader .st{color:var(--dim); font-size:12.5px;}
+
+/* ── bottom tab bar ── */
+.tabbar{display:flex; border-top:1px solid var(--line); background:var(--surface); padding:8px 0 18px; flex-shrink:0;}
+.tabbar .it{flex:1; text-align:center; padding:6px 0; font-size:12.5px; color:var(--dim); font-weight:500;}
+.tabbar .it.active{color:var(--accent); font-weight:700;}
+
+/* ── list content ── */
+.pad{padding:16px; display:flex; flex-direction:column; gap:12px; padding-bottom:24px;}
+.rowline{display:flex; align-items:center;}
+.g6{gap:6px}.g8{gap:8px}.g10{gap:10px}.g12{gap:12px}
+.mt2{margin-top:2px}.mt6{margin-top:6px}.mt8{margin-top:8px}.mt10{margin-top:10px}.mt12{margin-top:12px}
+.link{color:var(--accent); font-size:13px; font-weight:700; margin-top:12px;}
+.f11{font-size:11px}.f11-5{font-size:11.5px}.f12{font-size:12px}.f12-5{font-size:12.5px}.f13{font-size:13px}
+.f13-5{font-size:13.5px}.f14{font-size:14px}.f14-5{font-size:14.5px}.f15-5{font-size:15.5px}
+.dim{color:var(--dim)}.faint{color:var(--faint)}.wtxt{color:var(--text)}
+.bold6{font-weight:600}.bold7{font-weight:700}
+.wrap{flex-wrap:wrap}.flex1{flex:1}
+
+/* tab chips project */
+.tabchips{display:flex; gap:8px; padding:0 16px 8px; flex-shrink:0; overflow-x:auto; scrollbar-width:none;}
+.tabchips::-webkit-scrollbar{display:none;}
+
+/* ── chat ── */
+.bub-user{background:var(--accent); align-self:flex-end; border-radius:var(--r-bubble);
+  padding:9px 13px; max-width:86%; color:#fff; font-size:14px; line-height:19px;}
+.bub-asst{background:var(--surface); border:1px solid var(--line); align-self:flex-start;
+  border-radius:var(--r-bubble); padding:9px 13px; max-width:92%;}
+.bub-err{align-self:center; background:var(--danger-soft); border:1px solid #5c2a2a;
+  border-radius:var(--r-chip); padding:6px 12px; color:var(--danger); font-size:11.5px;}
+.chat-input{display:flex; align-items:flex-end; gap:8px; padding:10px 12px; border-top:1px solid var(--line); flex-shrink:0;}
+.chat-input .ti{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-bubble);
+  padding:9px 12px; font-size:14px; color:var(--text); min-height:38px;}
+.chat-input .send{background:var(--accent); border-radius:var(--r-bubble); padding:11px 16px;
+  color:#fff; font-size:13px; font-weight:700;}
+.chat-input .send.disabled{opacity:.45;}
+
+/* markdown port */
+.md{display:flex; flex-direction:column; gap:2px;}
+.md p{padding:1px 0; font-size:14px; line-height:20px; color:var(--text);}
+.md b{font-weight:700;}
+.md .h{font-size:16.5px; font-weight:700; margin-top:6px;}
+.md .h3{font-size:14.5px; font-weight:700; margin-top:6px;}
+.md .li{display:flex; padding-left:8px; padding-top:1.5px; padding-bottom:1.5px;}
+.md .li .m{color:var(--dim); font-size:14px; width:16px; flex-shrink:0;}
+.md .codeblock{background:var(--mono-bg); border:1px solid var(--line); border-radius:var(--r-bubble);
+  padding:10px; margin:6px 0;}
+.md .codeblock .lang{color:var(--faint); font-size:11px; margin-bottom:4px;}
+.md .codeblock pre{color:var(--term-text); font-size:12.5px; line-height:18px; font-family:ui-monospace,Menlo,Consolas,monospace; white-space:pre;}
+.md .quote{border-left:3px solid var(--line); padding-left:10px; margin:4px 0; color:var(--dim);}
+.md .hr{height:1px; background:var(--line); margin:8px 0;}
+.icode{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; color:#8ec4ff;
+  background:var(--code); border-radius:4px; padding:0 4px;}
+.alink{color:var(--accent); text-decoration:underline;}
+
+/* ── sheet ── */
+.scrim{position:absolute; inset:0; background:rgba(0,0,0,.55); display:flex; flex-direction:column; justify-content:flex-end; z-index:10;}
+.sheet{background:var(--surface); border-top-left-radius:20px; border-top-right-radius:20px;
+  border-top:1px solid var(--line); max-height:78%; padding-bottom:24px;}
+.sheet .shead{display:flex; align-items:center; justify-content:space-between; padding:16px;
+  border-bottom:1px solid var(--line); font-size:16px; font-weight:700;}
+.sheet .sbody{padding:16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto;}
+.sheet .prow{display:flex; align-items:center; gap:12px; background:var(--inset); border:1px solid var(--line);
+  border-radius:12px; padding:12px;}
+.sheet .x{color:var(--dim); font-size:20px; line-height:24px;}
+
+/* ── terminal ── */
+.term{background:var(--term); border:1px solid var(--line); border-radius:10px; padding:10px;
+  color:var(--term-text); font-size:12px; line-height:17px; font-family:ui-monospace,Menlo,Consolas,monospace;
+  white-space:pre-wrap; word-break:break-word;}
+
+/* ── approvals overlay ── */
+.approvals{padding:0 16px 6px; display:flex; flex-direction:column; flex-shrink:0; max-height:300px; overflow:hidden;}
+
+/* ── palette board ── */
+.board{display:flex; flex-wrap:wrap; gap:10px; margin:12px 0 20px;}
+.swatch{width:132px; border-radius:12px; border:1px solid var(--line); overflow:hidden; background:var(--surface);}
+.swatch .c{height:52px;}
+.swatch .m{padding:8px 10px; font-size:11px; color:var(--dim); line-height:16px;}
+.swatch .m b{color:var(--text); font-size:11.5px; display:block;}
+.inv{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:8px 0 6px;}
+.pillrow{display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 14px; align-items:center;}
+table.tk{border-collapse:collapse; font-size:12.5px; color:var(--dim); margin:10px 0 18px;}
+table.tk td,table.tk th{border:1px solid var(--line); padding:6px 12px; text-align:left;}
+table.tk th{color:var(--text); font-weight:600;}
+.mascot-item{display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line);
+  border-radius:12px; padding:10px 14px; color:var(--text); font-size:13px; font-weight:600;}
+.mascot-item span{color:var(--faint); font-weight:400; font-size:11.5px;}
+</style>
+</head>
+<body>
+
+<h1>Yuika Mobile — Mockup UI Existing</h1>
+<div class="sub">Replika 1:1 dari implementasi React Native saat ini (commit <span class="mono">6448a01</span>, remote v1.2 "mission control").
+Semua warna / radius / font-size / padding diambil persis dari kode. Tujuan: bahan redesign — layout, hirarki, dan isi komponen
+harus dianggap beku; visual (warna, tipografi, jarak, bentuk, mascot) boleh diubah. <b>UI copy WAJIB tetap English.</b>
+Frame = 390×844 dp, konten dalam frame bisa di-scroll seperti di HP.</div>
+
+<!-- ════════════════ 0. TOKEN & INVENTORY ════════════════ -->
+<h2>0 · Design token (src/theme.ts)</h2>
+<div class="sub">Semua layar memakai token ini. Token inilah satu-satunya sumber warna/radius di app.</div>
+<div class="board">
+  <div class="swatch"><div class="c" style="background:#1a1a1a"></div><div class="m"><b>canvas</b>#1a1a1a — latar app</div></div>
+  <div class="swatch"><div class="c" style="background:#212121"></div><div class="m"><b>surface</b>#212121 — card</div></div>
+  <div class="swatch"><div class="c" style="background:#101010"></div><div class="m"><b>inset</b>#101010 — input/stat</div></div>
+  <div class="swatch"><div class="c" style="background:#2e2e2e"></div><div class="m"><b>line</b>#2e2e2e — border</div></div>
+  <div class="swatch"><div class="c" style="background:#f5f5f5"></div><div class="m"><b>text</b>#f5f5f5</div></div>
+  <div class="swatch"><div class="c" style="background:#9e9e9e"></div><div class="m"><b>dim</b>#9e9e9e — teks sekunder</div></div>
+  <div class="swatch"><div class="c" style="background:#616161"></div><div class="m"><b>faint</b>#616161 — hint/meta</div></div>
+  <div class="swatch"><div class="c" style="background:#007cf7"></div><div class="m"><b>accent</b>#007cf7 — aksi</div></div>
+  <div class="swatch"><div class="c" style="background:#0d2b4d"></div><div class="m"><b>accentSoft</b>#0d2b4d — bg chip aktif</div></div>
+  <div class="swatch"><div class="c" style="background:#3ddc84"></div><div class="m"><b>ok</b>#3ddc84</div></div>
+  <div class="swatch"><div class="c" style="background:#e6a23c"></div><div class="m"><b>warn</b>#e6a23c</div></div>
+  <div class="swatch"><div class="c" style="background:#ff5c5c"></div><div class="m"><b>danger</b>#ff5c5c</div></div>
+  <div class="swatch"><div class="c" style="background:#2a1a1a"></div><div class="m"><b>dangerSoft</b>#2a1a1a — bg error</div></div>
+  <div class="swatch"><div class="c" style="background:#141414"></div><div class="m"><b>code</b>#141414 — inline code</div></div>
+  <div class="swatch"><div class="c" style="background:#171717"></div><div class="m"><b>monoBg</b>#171717 — code block</div></div>
+</div>
+<table class="tk">
+  <tr><th>Token</th><th>Nilai</th><th>Pemakaian</th></tr>
+  <tr><td class="mono">R.card</td><td class="mono">14</td><td>Card, sheet bubble</td></tr>
+  <tr><td class="mono">R.chip</td><td class="mono">999</td><td>Chip pill, Stop, error bubble pill</td></tr>
+  <tr><td class="mono">R.input</td><td class="mono">10</td><td>Field input, row kecil</td></tr>
+  <tr><td class="mono">R.bubble</td><td class="mono">14</td><td>Chat bubble + input chat</td></tr>
+</table>
+
+<h2>0a · Primitif UI (src/ui.tsx)</h2>
+<div class="sub">Semua varian Chip · Btn · Field · EmptyState · ErrorBox · Stat persis seperti kode.</div>
+<div class="pillrow">
+  <span class="lbl" style="margin:0">Chip outline:</span>
+  <span class="chip dim">5 todo</span> <span class="chip accent">2 doing</span>
+  <span class="chip warn">1 review</span> <span class="chip ok">6 done</span> <span class="chip danger">high</span>
+  <span class="lbl" style="margin:0">| solid:</span>
+  <span class="chip solid-accent">1 running</span>
+  <span class="lbl" style="margin:0">| tab aktif:</span>
+  <span class="chip accent active">Chat</span> <span class="chip accent">Tasks</span>
+</div>
+<div class="pillrow">
+  <span class="btn">Save provider</span>
+  <span class="btn small">Save limits</span>
+  <span class="btn outline">Reopen</span>
+  <span class="btn dim-outline small">Reject</span>
+  <span class="btn ok">Safety mode</span>
+  <span class="btn ok outline">Safety mode</span>
+  <span class="btn danger">Hardcore mode</span>
+  <span class="btn danger outline">Run reset</span>
+  <span class="btn disabled">Send</span>
+</div>
+<div style="max-width:360px; display:flex; flex-direction:column; gap:12px;">
+  <div class="field"><label>Daily limit</label><div class="input mono">2</div><div class="hint">Leave blank for no limit. Currency follows the price book.</div></div>
+  <div class="field"><label>API key</label><div class="input mono" style="color:var(--faint)">leave blank to keep current key</div></div>
+  <div class="errbox">Failed to load projects</div>
+  <div class="empty"><div class="t">No projects yet</div><div class="b">Projects created on this host appear here. Open the studio or desktop app to start one.</div></div>
+  <div style="display:flex; gap:8px;">
+    <div class="stat"><div class="l">Today</div><div class="v">$0.8421</div></div>
+    <div class="stat"><div class="l">All time</div><div class="v">$12.35</div></div>
+    <div class="stat"><div class="l">Burn/hr</div><div class="v warn">$0.31</div></div>
+  </div>
+</div>
+
+<h2>0b · Mascot — 9 persona (src/personas.ts + components/Mascot.tsx)</h2>
+<div class="sub">SVG geometri: bentuk + warna khas per persona, dua mata putih + pupil. Ini identitas visual persona di seluruh app (kartu, chat, team, usage, routes).</div>
+<div class="board" id="mascot-board"></div>
+
+<h2>0c · Skeleton loading (components/Skeleton.tsx)</h2>
+<div class="sub">Pulse 0.35 → 1 (650 ms). Dipakai di SEMUA fetch: projects, sessions, tasks, files, team, activity, screens, settings, sheet persona.</div>
+<div style="max-width:360px; display:flex; flex-direction:column; gap:10px;">
+  <div class="skelcard">
+    <div class="skelrow"><div class="bar" style="width:36px;height:36px;border-radius:18px"></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="bar" style="width:62%;height:12px"></div><div class="bar" style="width:38%;height:10px"></div></div></div>
+    <div class="bar" style="width:92%;height:10px"></div>
+    <div class="bar" style="width:74%;height:10px"></div>
+  </div>
+  <div class="skelcard">
+    <div class="skelrow"><div class="bar" style="width:36px;height:36px;border-radius:18px"></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="bar" style="width:55%;height:12px"></div><div class="bar" style="width:42%;height:10px"></div></div></div>
+    <div class="bar" style="width:88%;height:10px"></div>
+  </div>
+</div>
+
+<h2>0d · Markdown bubble (components/Markdown.tsx)</h2>
+<div class="sub">Renderer ringan tanpa dep: heading, list, code block, inline code (biru #8ec4ff), bold, italic, link, quote, hr. Ini isi bubble assistant.</div>
+<div style="max-width:360px;" class="bub-asst"><div class="md">
+  <div class="h">Progres katalog</div>
+  <p>Berikut ringkasan per <b>3 poin</b> yang kamu minta:</p>
+  <div class="li"><span class="m">•</span><p>Hero section selesai — palet <span class="icode">--accent</span> dipakai konsisten</p></div>
+  <div class="li"><span class="m">•</span><p>Halaman menu terhubung ke <span class="alink">CMS sanity</span></p></div>
+  <div class="li"><span class="m">2.</span><p>CI hijau di <span class="icode">main</span></p></div>
+  <div class="codeblock"><div class="lang">bash</div><pre>npm run build
+✔ 12 pages generated</pre></div>
+  <div class="quote">Catatan: gambar menu belum dioptimasi.</div>
+</div></div>
+
+<!-- ════════════════ 1. APP FLOW ════════════════ -->
+<h2>1 · App flow sebelum remote (App.tsx)</h2>
+<div class="sub">Boot → login portal (browser OAuth) → daftar host. Latar penuh canvas, padding root 20.</div>
+<div class="shelf">
+
+  <div>
+    <div class="lbl"><b>1.1 Boot</b>logo 72 + spinner accent, centered</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="scroll" style="display:flex; align-items:center; justify-content:center;">
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <img src="data:image/png;base64,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" style="width:72px;height:72px;border-radius:18px">
+          <div style="margin-top:16px;width:24px;height:24px;border:3px solid rgba(0,124,247,.25);border-top-color:#007cf7;border-radius:50%;animation:spin 0.9s linear infinite"></div>
+        </div>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>1.2 Login</b>logo 88, tagline, kartu sign-in</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="scroll" style="display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
+          <img src="data:image/png;base64,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" style="width:88px;height:88px;border-radius:22px;margin-bottom:6px">
+          <div class="dim f13">Studio Persona for Agentic AI</div>
+          <div class="card" style="margin-top:36px;padding:18px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:10px;">
+            <div class="wtxt" style="font-size:15px;font-weight:600;">Sign in with the Yuika portal</div>
+            <div class="dim f12-5" style="line-height:18px;">Your phone becomes mission control for every host signed in with this account: deployed studios, desktop hosts, projects, tasks, team, terminals, and live screens.</div>
+            <div class="btn" style="border-radius:8px;margin-top:6px;">Sign in</div>
+          </div>
+        </div>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>1.3 Hosts</b>header logo + email + list host</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="scroll" style="padding:20px 20px 24px;">
+        <div style="display:flex;align-items:center;gap:12px;padding:24px 0 12px;">
+          <img src="data:image/png;base64,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" style="width:34px;height:34px;border-radius:9px;">
+          <div style="flex:1">
+            <div class="wtxt" style="font-size:24px;font-weight:700;">Hosts</div>
+            <div class="dim f12-5" style="margin-top:2px;">zam@example.com</div>
+          </div>
+          <div class="dim f13">Sign out</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;">
+            <div style="font-size:22px">🖥</div>
+            <div style="flex:1"><div class="wtxt f14-5 bold6">Desktop — HOME-PC</div><div class="dim f12" style="margin-top:2px;">desktop · seen 5m ago</div></div>
+            <div style="color:var(--accent);font-size:13px;font-weight:600;">Open</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;">
+            <div style="font-size:22px">🌐</div>
+            <div style="flex:1"><div class="wtxt f14-5 bold6">Studio prod</div><div class="dim f12" style="margin-top:2px;">web · seen 12m ago</div></div>
+            <div style="color:var(--accent);font-size:13px;font-weight:600;">Open</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;" class="errbox">relay connection failed (code 4200)</div>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<!-- ════════════════ 2. ROOT TABS ════════════════ -->
+<h2>2 · Root tabs — Projects / Screens / Settings (RemoteProvider)</h2>
+<div class="sub">Setelah pilih host. Header: nama host + titik status + teks status. Bottom tab: TEXT-ONLY (tanpa ikon).
+Overlay approval muncul menimpa konten, di atas tab bar. Pull-to-refresh di semua daftar.</div>
+
+<div class="shelf">
+
+  <div>
+    <div class="lbl"><b>2.1 Projects — loaded</b>kartu misi per project</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="scroll"><div class="pad">
+        <div class="dim f12-5">2 projects · 18 tasks on this host</div>
+        <div class="card">
+          <div class="rowline g10">
+            <div style="flex:1">
+              <div class="wtxt f15-5 bold7">Katalog Kafe</div>
+              <div class="dim f12 mt2">Situs katalog menu kafe dengan CMS ringan.</div>
+            </div>
+            <span class="chip solid-accent">1 running</span>
+          </div>
+          <div class="rowline g6 mt10 wrap">
+            <span class="chip accent">2 doing</span><span class="chip warn">1 review</span>
+            <span class="chip dim">5 todo</span><span class="chip ok">6 done</span>
+          </div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
+            <div class="faint f11">Last: Build landing page sections · 3m ago</div>
+          </div>
+          <div class="link">Open mission control →</div>
+        </div>
+        <div class="card">
+          <div class="rowline g10">
+            <div style="flex:1">
+              <div class="wtxt f15-5 bold7">Yuika Mobile</div>
+              <div class="dim f12 mt2">Remote mission control app.</div>
+            </div>
+          </div>
+          <div class="rowline g6 mt10 wrap">
+            <span class="chip dim">3 todo</span><span class="chip ok">4 done</span>
+          </div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
+            <div class="faint f11">Last: Fix auto-scroll · 2h ago</div>
+          </div>
+          <div class="link">Open mission control →</div>
+        </div>
+      </div></div>
+      <div class="tabbar"><div class="it active">Projects</div><div class="it">Screens</div><div class="it">Settings</div></div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>2.2 Projects — skeleton</b>saat fetch / host lambat</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--warn)"></div><div class="st">Connecting</div>
+      </div>
+      <div class="scroll"><div class="pad">
+        <div class="skelcard"><div class="skelrow"><div class="bar" style="width:36px;height:36px;border-radius:18px"></div><div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="bar" style="width:62%;height:12px"></div><div class="bar" style="width:38%;height:10px"></div></div></div><div class="bar" style="width:92%;height:10px"></div><div class="bar" style="width:74%;height:10px"></div></div>
+        <div class="skelcard"><div class="skelrow"><div class="bar" style="width:36px;height:36px;border-radius:18px"></div><div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="bar" style="width:55%;height:12px"></div><div class="bar" style="width:40%;height:10px"></div></div></div><div class="bar" style="width:88%;height:10px"></div><div class="bar" style="width:66%;height:10px"></div></div>
+        <div class="skelcard"><div class="skelrow"><div class="bar" style="width:36px;height:36px;border-radius:18px"></div><div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="bar" style="width:48%;height:12px"></div><div class="bar" style="width:36%;height:10px"></div></div></div><div class="bar" style="width:80%;height:10px"></div></div>
+      </div></div>
+      <div class="tabbar"><div class="it active">Projects</div><div class="it">Screens</div><div class="it">Settings</div></div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>2.3 Screens</b>live browser lintas project</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="scroll"><div class="pad" style="gap:10px;">
+        <div class="card">
+          <div class="rowline g12">
+            <span data-mascot="yui-coder" data-size="40"></span>
+            <div style="flex:1">
+              <div class="wtxt f14-5 bold6">Katalog Kafe — Home</div>
+              <div class="dim f12">Hiro Yui · p_kafe · https://kafe.example</div>
+            </div>
+            <span class="chip ok">running</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="rowline g12">
+            <span data-mascot="yui-scholar" data-size="40"></span>
+            <div style="flex:1">
+              <div class="wtxt f14-5 bold6">Docs — playwright.dev</div>
+              <div class="dim f12">Pierre Yui · p_kafe · https://playwright.dev</div>
+            </div>
+            <span class="chip dim">idle</span>
+          </div>
+        </div>
+        <div class="empty"><div class="t">No live screens</div><div class="b">When personas browse on the host, their screens stream here for you to watch live.</div></div>
+      </div></div>
+      <div class="tabbar"><div class="it">Projects</div><div class="it active">Screens</div><div class="it">Settings</div></div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>2.4 Projects + approval overlay</b>max 2 kartu + counter; menimpa konten</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="scroll" style="opacity:.25;filter:blur(1px);"><div class="pad">
+        <div class="card"><div class="wtxt f15-5 bold7">Katalog Kafe</div></div>
+      </div></div>
+      <div class="approvals">
+        <div class="card" style="margin-bottom:8px;display:flex;flex-direction:column;gap:8px;">
+          <div class="rowline g8">
+            <div class="wtxt f14 bold7" style="flex:1;">run_command</div>
+            <span class="chip warn">medium</span>
+          </div>
+          <div class="dim f12-5" style="line-height:18px;">npx playwright install chromium</div>
+          <div class="rowline g8">
+            <span class="btn dim-outline small">Reject</span>
+            <span class="btn small" style="flex:1">Approve</span>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:8px;display:flex;flex-direction:column;gap:8px;">
+          <div class="rowline g8">
+            <div class="wtxt f14 bold7" style="flex:1;">shell_command</div>
+            <span class="chip danger">high</span>
+          </div>
+          <div class="dim f12-5" style="line-height:18px;">rm -rf dist/ &amp;&amp; npm run build</div>
+          <div class="rowline g8">
+            <span class="btn dim-outline small">Reject</span>
+            <span class="btn small" style="flex:1">Approve</span>
+          </div>
+        </div>
+        <div class="faint f11-5" style="text-align:center;">+1 more waiting</div>
+      </div>
+      <div class="tabbar"><div class="it active">Projects</div><div class="it">Screens</div><div class="it">Settings</div></div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+</div>
+
+<!-- ════════════════ 3. SETTINGS ════════════════ -->
+<h2>3 · Settings remote (SettingsScreen) — scroll panjang</h2>
+<div class="sub">7 kartu bertumpuk: Approval mode · Budget · Provider · Model routes · Usage · MCP · Danger zone.
+TIDAK ada sign-out host dari mobile (host-only). Semua aksi = request RPC ke host.</div>
+<div class="shelf">
+  <div>
+    <div class="lbl"><b>3.1 Settings — atas</b>modes, budget, provider</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="scroll"><div class="pad" style="gap:12px;padding-bottom:32px;">
+
+        <div class="card">
+          <div class="sect">Approval mode</div>
+          <div class="rowline g8">
+            <span class="btn ok" style="flex:1">Safety mode</span>
+            <span class="btn danger outline" style="flex:1">Hardcore mode</span>
+          </div>
+          <div class="dim f12 mt10" style="line-height:17px;">Safety: risky tool calls pause and ask you here before running.</div>
+        </div>
+
+        <div class="card">
+          <div class="sect">Budget</div>
+          <div class="rowline g8" style="margin-bottom:10px;">
+            <div class="stat"><div class="l">Today</div><div class="v">$0.8421</div></div>
+            <div class="stat"><div class="l">All time</div><div class="v">$12.35</div></div>
+            <div class="stat"><div class="l">Burn/hr</div><div class="v">$0.31</div></div>
+          </div>
+          <div class="rowline g8">
+            <div class="field" style="flex:1"><label>Daily limit</label><div class="input mono">2</div></div>
+            <div class="field" style="flex:1"><label>Total limit</label><div class="input mono">50</div></div>
+          </div>
+          <div class="rowline g10 mt10">
+            <span class="btn small">Save limits</span><span class="dim f12">Saved</span>
+          </div>
+          <div class="faint f11 mt8">Leave blank for no limit. Currency follows the price book.</div>
+        </div>
+
+        <div class="card">
+          <div class="sect">Provider</div>
+          <div class="rowline g8" style="margin-bottom:10px;">
+            <span class="chip dim">openai</span><span class="chip ok">API key set</span><span class="chip dim">sk-…ab12</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="field"><label>Base URL</label><div class="input mono">https://api.openai.com/v1</div></div>
+            <div class="field"><label>Model</label><div class="input mono">gpt-5.2</div></div>
+            <div class="field"><label>Fallback model</label><div class="input mono">gpt-5-mini</div></div>
+            <div class="field"><label>API key</label><div class="input mono" style="color:var(--faint)">leave blank to keep current key</div></div>
+          </div>
+          <div class="rowline g10 mt10">
+            <span class="btn small">Save provider</span>
+            <span class="dim f12" style="flex:1">Saved — host applied the new provider</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="sect">Model routes</div>
+          <div class="dim f12" style="margin-bottom:10px;">Default: gpt-5.2 (fallback gpt-5-mini)</div>
+          <div style="margin-bottom:10px;">
+            <div class="rowline g10" style="margin-bottom:6px;">
+              <span data-mascot="yui-coder" data-size="26"></span>
+              <div class="wtxt f13-5 bold6 flex1">Hiro Yui</div><span class="chip accent">claude-sonnet-4.6</span>
+            </div>
+            <div class="rowline g8" style="align-items:flex-end;">
+              <div class="field flex1"><div class="input mono" style="color:var(--faint)">override model id</div></div>
+              <span class="btn outline small">Save</span>
+            </div>
+          </div>
+          <div style="margin-bottom:10px;">
+            <div class="rowline g10" style="margin-bottom:6px;">
+              <span data-mascot="yui-designer" data-size="26"></span>
+              <div class="wtxt f13-5 bold6 flex1">Picasso Yui</div><span class="chip dim">default</span>
+            </div>
+            <div class="rowline g8" style="align-items:flex-end;">
+              <div class="field flex1"><div class="input mono" style="color:var(--faint)">model id to override</div></div>
+              <span class="btn outline small">Save</span>
+            </div>
+          </div>
+          <div class="dim f12">Route saved</div>
+          <div class="faint f11" style="margin-top:6px;">Clear the field and save to fall back to the default model.</div>
+        </div>
+
+        <div class="card">
+          <div class="sect">Usage</div>
+          <div class="rowline g8" style="margin-bottom:10px;">
+            <div class="stat"><div class="l">Calls</div><div class="v">412</div></div>
+            <div class="stat"><div class="l">Tokens</div><div class="v">318.4k in</div></div>
+            <div class="stat"><div class="l">Out</div><div class="v">86.2k</div></div>
+          </div>
+          <div class="rowline g8" style="padding:5px 0;"><span data-mascot="yui-coder" data-size="20"></span><div class="wtxt f12-5 flex1">Hiro Yui · claude-sonnet-4.6</div><span class="dim f12">12×</span><span class="wtxt f12">$0.8421</span></div>
+          <div class="rowline g8" style="padding:5px 0;"><span data-mascot="yui-conductor" data-size="20"></span><div class="wtxt f12-5 flex1">Maestro Yui · gpt-5.2</div><span class="dim f12">8×</span><span class="faint f12">unpriced</span></div>
+          <div class="rowline g8" style="padding:5px 0;"><span data-mascot="yui-scholar" data-size="20"></span><div class="wtxt f12-5 flex1">Pierre Yui · gpt-5.2</div><span class="dim f12">6×</span><span class="wtxt f12">$0.2103</span></div>
+        </div>
+
+        <div class="card">
+          <div class="sect">MCP servers</div>
+          <div style="margin-bottom:10px;">
+            <div class="rowline g8"><div class="wtxt f13-5 bold6 flex1">filesystem</div><span class="chip ok">ready</span></div>
+            <div class="dim f11-5 mt6">trusted · 7 tools</div>
+            <div class="rowline g8 mt6"><span class="btn danger outline small">Revoke trust</span></div>
+          </div>
+          <div>
+            <div class="rowline g8"><div class="wtxt f13-5 bold6 flex1">tailscale</div><span class="chip danger">error</span></div>
+            <div class="dim f11-5 mt6">untrusted · 3 tools · spawn uv ENOENT</div>
+            <div class="rowline g8 mt6"><span class="btn outline small">Retry</span><span class="btn ok outline small">Trust</span></div>
+          </div>
+        </div>
+
+        <div class="card" style="border-color:#5c2a2a;">
+          <div class="sect">Danger zone</div>
+          <div class="rowline g8" style="margin-bottom:10px;">
+            <span class="btn danger small" style="flex:1">Reset work data</span>
+            <span class="btn danger outline small" style="flex:1">Factory reset</span>
+          </div>
+          <div class="dim f12" style="line-height:17px;margin-bottom:10px;">Deletes projects, sessions, and workspace data. Keeps your account link and provider setup.<br>The host restarts right after you run this.</div>
+          <div class="field"><label>Type "RESET" to confirm</label><div class="input mono" style="color:var(--faint)">RESET</div></div>
+          <div class="mt10"><span class="btn danger small disabled">Run reset</span></div>
+        </div>
+
+      </div></div>
+      <div class="tabbar"><div class="it">Projects</div><div class="it">Screens</div><div class="it active">Settings</div></div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ════════════════ 4. PROJECT MISSION CONTROL ════════════════ -->
+<h2>4 · Project mission control (ProjectScreen) — 7 tab</h2>
+<div class="sub">Tab chips horizontal (scroll). Footer nama project. Konten tiap tab: fetch saat mount + skeleton + pull-to-refresh.</div>
+<div class="shelf stack-shelf">
+
+  <div>
+    <div class="lbl"><b>4.1 Chat</b>daftar sesi project + tombol new chat</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back">‹</div>
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="tabchips">
+        <span class="chip accent active">Chat</span><span class="chip accent">Tasks</span><span class="chip accent">Files</span>
+        <span class="chip accent">Team</span><span class="chip accent">Activity</span><span class="chip accent">Terminal</span><span class="chip accent">Browser</span>
+      </div>
+      <div class="scroll"><div class="pad">
+        <span class="btn">+ New chat</span>
+        <div class="card">
+          <div class="rowline g12">
+            <span data-mascot="yui-coder" data-size="38"></span>
+            <div style="flex:1">
+              <div class="wtxt f14-5 bold6">Build landing page sections</div>
+              <div class="dim f12">Hiro Yui</div>
+            </div>
+            <span class="faint f11">14:05</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="rowline g12">
+            <span data-mascot="yui-scholar" data-size="38"></span>
+            <div style="flex:1">
+              <div class="wtxt f14-5 bold6">Research kompetitor kafe</div>
+              <div class="dim f12">Pierre Yui</div>
+            </div>
+            <span class="faint f11">11:20</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="rowline g12">
+            <span data-mascot="yui-designer" data-size="38"></span>
+            <div style="flex:1">
+              <div class="wtxt f14-5 bold6">Delegation: Hero section design</div>
+              <div class="dim f12">Picasso Yui</div>
+            </div>
+            <span class="faint f11">09/11</span>
+          </div>
+        </div>
+      </div></div>
+      <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>4.2 Chat — sheet "new chat"</b>pilih persona → langsung buka sesi</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader" style="opacity:.2;">
+        <div class="back">‹</div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="tabchips" style="opacity:.2;">
+        <span class="chip accent active">Chat</span><span class="chip accent">Tasks</span>
+      </div>
+      <div class="scroll" style="opacity:.15;"><div class="pad"><div class="card"><div class="wtxt f14-5 bold6">Build landing page sections</div></div></div></div>
+      <div class="scrim">
+        <div class="sheet">
+          <div class="shead"><span>Start a new chat</span><span class="x">×</span></div>
+          <div class="sbody">
+            <div class="prow"><span data-mascot="yui-conductor" data-size="36"></span><div style="flex:1"><div class="wtxt f14-5 bold6">Maestro Yui</div><div class="dim f12">gpt-5.2</div></div><span style="color:var(--accent);font-size:12.5px;font-weight:700;">Start</span></div>
+            <div class="prow"><span data-mascot="yui-coder" data-size="36"></span><div style="flex:1"><div class="wtxt f14-5 bold6">Hiro Yui</div><div class="dim f12">claude-sonnet-4.6</div></div><span style="color:var(--accent);font-size:12.5px;font-weight:700;">Start</span></div>
+            <div class="prow"><span data-mascot="yui-designer" data-size="36"></span><div style="flex:1"><div class="wtxt f14-5 bold6">Picasso Yui</div><div class="dim f12">default model</div></div><span style="color:var(--dim);font-size:12.5px;font-weight:700;">Opening…</span></div>
+            <div class="prow"><span data-mascot="yui-sherlock" data-size="36"></span><div style="flex:1"><div class="wtxt f14-5 bold6">Watson Yui</div><div class="dim f12">default model</div></div><span style="color:var(--accent);font-size:12.5px;font-weight:700;">Start</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>4.3 Tasks</b>tree rekursif, indent 14/level, mascot assignee</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back">‹</div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="tabchips">
+        <span class="chip accent">Chat</span><span class="chip accent active">Tasks</span><span class="chip accent">Files</span>
+        <span class="chip accent">Team</span><span class="chip accent">Activity</span><span class="chip accent">Terminal</span><span class="chip accent">Browser</span>
+      </div>
+      <div class="scroll"><div class="pad">
+        <div class="dim f12-5">8 tasks</div>
+        <div>
+          <div class="rowline g8" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:6px;">
+            <div style="width:9px;height:9px;border-radius:5px;background:var(--ok)"></div>
+            <div class="dim f13-5 flex1">Setup proyek &amp; tooling</div>
+            <span data-mascot="yui-coder" data-size="20"></span>
+          </div>
+          <div style="padding-left:14px;">
+            <div class="rowline g8" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:6px;">
+              <div style="width:9px;height:9px;border-radius:5px;background:var(--ok)"></div>
+              <div class="dim f13-5 flex1">Init repo</div><span data-mascot="yui-coder" data-size="20"></span>
+            </div>
+            <div class="rowline g8" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:6px;">
+              <div style="width:9px;height:9px;border-radius:5px;background:var(--accent)"></div>
+              <div class="wtxt f13-5 flex1">CI pipeline</div><span data-mascot="yui-coder" data-size="20"></span>
+            </div>
+          </div>
+          <div class="rowline g8" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:6px;">
+            <div style="width:9px;height:9px;border-radius:5px;background:var(--warn)"></div>
+            <div class="wtxt f13-5 flex1">Desain katalog</div><span data-mascot="yui-designer" data-size="20"></span>
+          </div>
+          <div style="padding-left:14px;">
+            <div class="rowline g8" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:6px;">
+              <div style="width:9px;height:9px;border-radius:5px;background:var(--ok)"></div>
+              <div class="dim f13-5 flex1">Moodboard</div><span data-mascot="yui-designer" data-size="20"></span>
+            </div>
+          </div>
+          <div class="rowline g8" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:6px;">
+            <div style="width:9px;height:9px;border-radius:5px;background:var(--faint)"></div>
+            <div class="wtxt f13-5 flex1">Konten menu (12 kopi + foto)</div><span data-mascot="yui-scribe" data-size="20"></span>
+          </div>
+          <div class="rowline g8" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:6px;">
+            <div style="width:9px;height:9px;border-radius:5px;background:var(--faint)"></div>
+            <div class="wtxt f13-5 flex1">Deploy ke Vercel</div>
+          </div>
+        </div>
+      </div></div>
+      <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>4.4 Files</b>tree collapse (▸/▾ warn), file mono + ukuran; tap → viewer</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back">‹</div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="tabchips">
+        <span class="chip accent">Chat</span><span class="chip accent">Tasks</span><span class="chip accent active">Files</span>
+        <span class="chip accent">Team</span><span class="chip accent">Activity</span><span class="chip accent">Terminal</span><span class="chip accent">Browser</span>
+      </div>
+      <div class="scroll"><div class="pad" style="gap:0;">
+        <div class="rowline g8" style="padding:7px 0;">
+          <span style="color:var(--warn);font-size:13px;width:16px;">▾</span><span class="wtxt f13-5 flex1">src</span>
+        </div>
+        <div style="border-left:1px solid var(--line);padding-left:0;">
+          <div class="rowline g8" style="padding:7px 0 7px 14px;">
+            <span class="dim f13" style="width:16px;">·</span><span class="wtxt f13-5 flex1 mono">App.tsx</span><span class="faint f11">4.2 KB</span>
+          </div>
+          <div class="rowline g8" style="padding:7px 0 7px 14px;">
+            <span class="dim f13" style="width:16px;">·</span><span class="wtxt f13-5 flex1 mono">theme.ts</span><span class="faint f11">1.1 KB</span>
+          </div>
+        </div>
+        <div class="rowline g8" style="padding:7px 0;">
+          <span style="color:var(--warn);font-size:13px;width:16px;">▸</span><span class="wtxt f13-5 flex1">docs</span>
+        </div>
+        <div class="rowline g8" style="padding:7px 0;">
+          <span class="dim f13" style="width:16px;">·</span><span class="wtxt f13-5 flex1 mono">README.md</span><span class="faint f11">3.8 KB</span>
+        </div>
+        <div class="rowline g8" style="padding:7px 0;">
+          <span class="dim f13" style="width:16px;">·</span><span class="wtxt f13-5 flex1 mono">TASKS.md</span><span class="faint f11">12.6 KB</span>
+        </div>
+      </div></div>
+      <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>4.5 Team</b>roster + delegation jobs (running punya link live session)</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back">‹</div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="tabchips">
+        <span class="chip accent">Chat</span><span class="chip accent">Tasks</span><span class="chip accent">Files</span>
+        <span class="chip accent active">Team</span><span class="chip accent">Activity</span><span class="chip accent">Terminal</span><span class="chip accent">Browser</span>
+      </div>
+      <div class="scroll"><div class="pad">
+        <div class="sect" style="margin-top:0;">Team</div>
+        <div class="card"><div class="rowline g12">
+          <span data-mascot="yui-coder" data-size="40"></span>
+          <div style="flex:1"><div class="wtxt f14-5 bold6">Hiro Yui</div><div class="dim f12">coder</div></div>
+        </div></div>
+        <div class="card"><div class="rowline g12">
+          <span data-mascot="yui-designer" data-size="40"></span>
+          <div style="flex:1"><div class="wtxt f14-5 bold6">Picasso Yui</div><div class="dim f12">designer</div></div>
+        </div></div>
+        <div class="card"><div class="rowline g12">
+          <span data-mascot="yui-scribe" data-size="40"></span>
+          <div style="flex:1"><div class="wtxt f14-5 bold6">Poe Yui</div><div class="dim f12">scribe</div></div>
+        </div></div>
+        <div class="sect" style="margin-top:8px;">Delegations</div>
+        <div class="card">
+          <div class="rowline g10">
+            <span data-mascot="yui-designer" data-size="32"></span>
+            <div class="wtxt f13-5 bold6 flex1">Desain hero section katalog</div>
+            <span class="chip accent">running</span>
+          </div>
+          <div class="dim f12 mt8" style="line-height:17px;">Mockup hero siap; sedang mengekspor aset webp.</div>
+          <div style="color:var(--accent);font-size:12.5px;font-weight:700;margin-top:8px;">Open live session →</div>
+        </div>
+        <div class="card">
+          <div class="rowline g10">
+            <span data-mascot="yui-sherlock" data-size="32"></span>
+            <div class="wtxt f13-5 bold6 flex1">Cek konsistensi warna antar halaman</div>
+            <span class="chip ok">done</span>
+          </div>
+        </div>
+      </div></div>
+      <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>4.6 Activity</b>log mono, ikon kind, error merah ×</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back">‹</div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="tabchips">
+        <span class="chip accent">Chat</span><span class="chip accent">Tasks</span><span class="chip accent">Files</span>
+        <span class="chip accent">Team</span><span class="chip accent active">Activity</span><span class="chip accent">Terminal</span><span class="chip accent">Browser</span>
+      </div>
+      <div class="scroll"><div class="pad" style="gap:10px;">
+        <div class="rowline g10" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px;align-items:flex-start;">
+          <span class="faint" style="font-size:14px;width:18px;">⚙</span>
+          <div style="flex:1">
+            <div class="wtxt f12-5 mono" style="line-height:17px;">file_write src/theme.ts (1.1 KB)</div>
+            <div class="faint f11 mt6">Hiro Yui · 14:04</div>
+          </div>
+        </div>
+        <div class="rowline g10" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px;align-items:flex-start;">
+          <span class="faint" style="font-size:14px;width:18px;">✓</span>
+          <div style="flex:1">
+            <div class="wtxt f12-5 mono" style="line-height:17px;">qa_visual hero vs moodboard</div>
+            <div class="faint f11 mt6">Picasso Yui · 13:58</div>
+          </div>
+        </div>
+        <div class="rowline g10" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px;align-items:flex-start;">
+          <span style="color:var(--danger);font-size:14px;width:18px;">×</span>
+          <div style="flex:1">
+            <div class="mono f12-5" style="color:var(--danger);line-height:17px;">run_command npm run build (exit 1)</div>
+            <div class="faint f11 mt6">Hiro Yui · 13:51</div>
+          </div>
+        </div>
+        <div class="rowline g10" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px;align-items:flex-start;">
+          <span class="faint" style="font-size:14px;width:18px;">→</span>
+          <div style="flex:1">
+            <div class="wtxt f12-5 mono" style="line-height:17px;">delegation start Desain hero section katalog → yui-designer</div>
+            <div class="faint f11 mt6">Maestro Yui · 13:40</div>
+          </div>
+        </div>
+        <div class="rowline g10" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px;align-items:flex-start;">
+          <span class="faint" style="font-size:14px;width:18px;">!</span>
+          <div style="flex:1">
+            <div class="wtxt f12-5 mono" style="line-height:17px;">approval_requested run_command</div>
+            <div class="faint f11 mt6">Hiro Yui · 13:36</div>
+          </div>
+        </div>
+      </div></div>
+      <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>4.7 Terminal — idle</b>CTA buka PTY shared</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back">‹</div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="tabchips">
+        <span class="chip accent">Chat</span><span class="chip accent">Tasks</span><span class="chip accent">Files</span>
+        <span class="chip accent">Team</span><span class="chip accent">Activity</span><span class="chip accent active">Terminal</span><span class="chip accent">Browser</span>
+      </div>
+      <div class="scroll"><div class="pad">
+        <div class="card">
+          <div class="wtxt f14-5 bold6">Project terminal</div>
+          <div class="dim f12-5 mt6" style="line-height:18px;">Opens a shell at this project workspace on the host. Shared with the studio: detaching on your phone keeps it alive.</div>
+          <div class="mt12"><span class="btn">Open terminal</span></div>
+        </div>
+      </div></div>
+      <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>4.8 Terminal — attached</b>replay 16 KB ekor + input + Run</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back">‹</div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="tabchips">
+        <span class="chip accent">Chat</span><span class="chip accent">Tasks</span><span class="chip accent">Files</span>
+        <span class="chip accent">Team</span><span class="chip accent">Activity</span><span class="chip accent active">Terminal</span><span class="chip accent">Browser</span>
+      </div>
+      <div style="flex:1;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:0;">
+        <div class="rowline g8">
+          <span class="chip ok">live</span>
+          <span class="faint f11 flex1 mono">term-7f3a</span>
+          <span class="btn dim-outline small">Detach</span>
+        </div>
+        <div class="term" style="flex:1;overflow:auto;">Microsoft Windows [Version 10.0.26100.2605]
+(c) Microsoft Corporation.
+
+C:\work\katalog&gt;dir /b
+apps
+docs
+package.json
+README.md
+
+C:\work\katalog&gt;git status
+On branch main
+nothing to commit, working tree clean
+
+C:\work\katalog&gt;npm run build
+
+&gt; katalog@0.1.0 build
+&gt; next build
+
+ ✓ Compiled successfully
+ ✓ Generating static pages
+
+C:\work\katalog&gt;_</div>
+        <div class="rowline g8">
+          <div style="flex:1;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--faint);">Type a command…</div>
+          <span class="btn small">Run</span>
+        </div>
+      </div>
+      <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>4.9 Browser</b>screen milik project ini saja</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back">‹</div><div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="tabchips">
+        <span class="chip accent">Chat</span><span class="chip accent">Tasks</span><span class="chip accent">Files</span>
+        <span class="chip accent">Team</span><span class="chip accent">Activity</span><span class="chip accent">Terminal</span><span class="chip accent active">Browser</span>
+      </div>
+      <div class="scroll"><div class="pad" style="gap:10px;">
+        <div class="card">
+          <div class="rowline g12">
+            <span data-mascot="yui-coder" data-size="38"></span>
+            <div style="flex:1">
+              <div class="wtxt f14-5 bold6">Katalog Kafe — Home</div>
+              <div class="dim f12">https://kafe.example</div>
+            </div>
+            <span class="chip ok">running</span>
+          </div>
+        </div>
+        <div class="empty"><div class="t">No live browser screens</div><div class="b">Screens opened by personas in this project stream here. Ask a persona to browse first.</div></div>
+      </div></div>
+      <div class="faint f11" style="text-align:center;padding-bottom:8px;">Katalog Kafe</div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+</div>
+
+<!-- ════════════════ 5. DEEP SCREENS ════════════════ -->
+<h2>5 · Deep screens (stack push — tab bar hilang, back button muncul)</h2>
+<div class="sub">Navigasi: push {chat, file, screen}. Header menampilkan tombol ‹ saat stack tidak kosong.</div>
+<div class="shelf">
+
+  <div>
+    <div class="lbl"><b>5.1 Session chat — running</b>markdown, streaming, Stop</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back">‹</div>
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:0 16px 8px;flex-shrink:0;">
+        <span data-mascot="yui-coder" data-size="40"></span>
+        <div style="flex:1">
+          <div class="wtxt f15-5 bold7">Build landing page sections</div>
+          <div class="dim f12">Hiro Yui</div>
+        </div>
+        <span style="border:1px solid var(--danger);border-radius:var(--r-chip);padding:6px 12px;color:var(--danger);font-size:12.5px;font-weight:700;">Stop</span>
+      </div>
+      <div class="scroll" style="padding:10px 16px;display:flex;flex-direction:column;gap:8px;">
+        <div class="bub-user">Rangkum progres katalog dalam 3 poin, sebutkan file yang berubah</div>
+        <div class="bub-asst"><div class="md">
+          <div class="h">Progres Katalog Kafe</div>
+          <p>Oke, ini rangkumannya per <b>3 poin</b>:</p>
+          <div class="li"><span class="m">1.</span><p>Hero section selesai — palet <span class="icode">--accent</span> dipakai konsisten di 3 halaman</p></div>
+          <div class="li"><span class="m">2.</span><p>Data menu terhubung ke <span class="alink">CMS sanity</span> via <span class="icode">src/lib/menu.ts</span></p></div>
+          <div class="li"><span class="m">3.</span><p>CI hijau; build 12 halaman dalam 9 detik</p></div>
+          <div class="codeblock"><div class="lang">bash</div><pre>npm run build
+✔ 12 pages generated</pre></div>
+        </div></div>
+        <div class="bub-user">Lanjut: perbaiki meta title tiap halaman</div>
+        <div class="bub-asst"><div class="md"><p>Selesai. Berikut ringkasan perubahan <span class="icode">app/layout.tsx</span>: menambahkan metadata per-route dan OpenGraph image</p></div></div>
+        <div class="bub-err">Turn failed. The host reported an error; try again.</div>
+        <div class="bub-asst"><div class="md"><p>…</p></div></div>
+      </div>
+      <div class="chat-input">
+        <div class="ti" style="color:var(--faint)">Message…</div>
+        <span class="send disabled">Send</span>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>5.2 Session chat — sesi baru</b>empty state</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back">‹</div>
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:0 16px 8px;flex-shrink:0;">
+        <span data-mascot="yui-sherlock" data-size="40"></span>
+        <div style="flex:1">
+          <div class="wtxt f15-5 bold7">Watson Yui</div>
+          <div class="dim f12">Watson Yui</div>
+        </div>
+      </div>
+      <div class="scroll" style="display:flex;align-items:center;justify-content:center;">
+        <div class="dim f12-5" style="text-align:center;max-width:260px;">No messages yet — say something to start this session.</div>
+      </div>
+      <div class="chat-input">
+        <div class="ti" style="color:var(--faint)">Message…</div>
+        <span class="send disabled">Send</span>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>5.3 File viewer</b>teks mono, chip truncated</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back">‹</div>
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div class="scroll"><div class="pad" style="gap:10px;">
+        <div class="rowline g8">
+          <div class="wtxt bold7 flex1" style="font-size:15px;">TASKS.md</div>
+          <span class="chip warn">truncated</span>
+        </div>
+        <div class="faint f11 mono">docs/TASKS.md</div>
+        <div class="card" style="background:var(--term);padding:10px;">
+          <div class="mono" style="color:var(--term-text);font-size:12px;line-height:17.5px;white-space:pre-wrap;"># TASKS — Katalog Kafe
+
+## Sprint 3
+- [x] Hero section
+- [x] Menu grid responsive
+- [ ] Copywriting halaman About
+- [ ] Integrasi Instagram feed
+
+## Catatan
+Semua task di-sync dari studio board.
+…</div>
+        </div>
+        <div class="dim f11-5">Preview shows the first 64 KB. Open the studio for the full file.</div>
+      </div></div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>5.4 Live screen viewer</b>frame ~1 fps + status chip</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back">‹</div>
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div style="flex:1;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:0;">
+        <div class="rowline g10">
+          <span data-mascot="yui-coder" data-size="36"></span>
+          <div style="flex:1">
+            <div class="wtxt f14-5 bold7">Katalog Kafe — Home</div>
+            <div class="dim f12">https://kafe.example · Hiro Yui</div>
+          </div>
+          <span class="chip ok">running</span>
+        </div>
+        <div class="card" style="flex:1;background:var(--term);display:flex;align-items:center;justify-content:center;padding:10px;">
+          <div style="width:100%;aspect-ratio:16/10;border-radius:8px;overflow:hidden;background:#fff;position:relative;">
+            <!-- placeholder frame jpeg hasil stream -->
+            <div style="background:#f6f5f2;height:14%;display:flex;align-items:center;padding:0 8px;gap:6px;">
+              <div style="width:7px;height:7px;border-radius:50%;background:#bbb"></div>
+              <div style="flex:1;height:8px;background:#eee;border-radius:4px;"></div>
+            </div>
+            <div style="padding:8%;text-align:center;">
+              <div style="font-size:15px;font-weight:800;color:#3d2b1f;font-family:Georgia,serif;">Katalog Kafe</div>
+              <div style="font-size:8px;color:#8a7a6d;margin-top:4px;">kopi · kue · suasana</div>
+              <div style="display:flex;gap:6px;justify-content:center;margin-top:8%;">
+                <div style="width:26%;height:34px;background:#e7dfd4;border-radius:6px;"></div>
+                <div style="width:26%;height:34px;background:#e7dfd4;border-radius:6px;"></div>
+                <div style="width:26%;height:34px;background:#e7dfd4;border-radius:6px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="faint f11" style="text-align:center;">Live stream refreshes about once per second while the persona browses.</div>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="lbl"><b>5.5 Screen viewer — waiting</b>frame pertama belum datang</div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>14:05</span><span class="r">▮▮▮ ⌁ 84%</span></div>
+      <div class="rheader">
+        <div class="back">‹</div>
+        <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+        <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+      </div>
+      <div style="flex:1;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:0;">
+        <div class="rowline g10">
+          <span data-mascot="yui-scholar" data-size="36"></span>
+          <div style="flex:1">
+            <div class="wtxt f14-5 bold7">Docs — playwright.dev</div>
+            <div class="dim f12">https://playwright.dev · Pierre Yui</div>
+          </div>
+          <span class="chip dim">loading</span>
+        </div>
+        <div class="card" style="flex:1;background:var(--term);display:flex;align-items:center;justify-content:center;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <div class="dim f13">Waiting for first frame…</div>
+            <div class="faint f11 mono">p_kafe/scr-0</div>
+          </div>
+        </div>
+        <div class="faint f11" style="text-align:center;">Live stream refreshes about once per second while the persona browses.</div>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+  </div>
+
+</div>
+
+<!-- ════════════════ 6. HEADER STATES ════════════════ -->
+<h2>6 · Semua state header koneksi (RemoteProvider)</h2>
+<div class="sub">Titik + teks status; warna: joined=ok · connecting/reconnecting/host-offline=warn · gone/logged-out=danger. Tombol ‹ hanya saat stack tidak kosong.</div>
+<div class="pillrow">
+  <div class="card" style="width:250px;"><div class="rheader" style="padding:0;">
+    <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+    <div class="dot" style="background:var(--ok)"></div><div class="st">Live</div>
+  </div></div>
+  <div class="card" style="width:250px;"><div class="rheader" style="padding:0;">
+    <div class="back">‹</div>
+    <div class="wtxt bold7" style="font-size:17px;flex:1;">Desktop — HOME-PC</div>
+    <div class="dot" style="background:var(--warn)"></div><div class="st">Reconnecting</div>
+  </div></div>
+  <div class="card" style="width:250px;"><div class="rheader" style="padding:0;">
+    <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+    <div class="dot" style="background:var(--warn)"></div><div class="st">Host offline</div>
+  </div></div>
+  <div class="card" style="width:250px;"><div class="rheader" style="padding:0;">
+    <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+    <div class="dot" style="background:var(--danger)"></div><div class="st">Host is not reachable</div>
+  </div></div>
+  <div class="card" style="width:250px;"><div class="rheader" style="padding:0;">
+    <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+    <div class="dot" style="background:var(--danger)"></div><div class="st">Signed out on host</div>
+  </div></div>
+  <div class="card" style="width:250px;"><div class="rheader" style="padding:0;">
+    <div class="wtxt bold7" style="font-size:17px;flex:1;">Studio prod</div>
+    <div class="dot" style="background:var(--warn)"></div><div class="st">Connecting</div>
+  </div></div>
+</div>
+
+<!-- ════════════════ 7. CATATAN INTERAKSI ════════════════ -->
+<h2>7 · Interaksi (tidak terlihat di mockup statis)</h2>
+<div class="note">
+<b>Pull-to-refresh</b> — semua daftar (projects, sessions, tasks, files, team, activity, screens, settings). Spinner warna accent.<br>
+<b>Auto-scroll chat</b> — hanya jika user berada ≤ 120 px dari bawah; kalau user sedang membaca ke atas, TIDAK dipaksa turun.<br>
+<b>Streaming</b> — bubble footer terisi real-time saat <code>message.delta</code>; berhenti jadi bubble permanen saat <code>message.done</code>.<br>
+<b>Stop</b> — muncul di header chat hanya saat turn berjalan; kirim <code>cancel</code> ke host.<br>
+<b>Stack push/pop</b> — tap "Open mission control →" / sesi / file / screen menimpa layar penuh; tab bar hilang; tombol ‹ kembali satu level.<br>
+<b>Sheet</b> — slide-up dari bawah + scrim gelap; tutup via scrim atau ×.<br>
+<b>Approval overlay</b> — muncul di atas SEMUA layar remote (termasuk dalam chat); max 2 kartu + "+N more waiting"; resolved otomatis hilang.<br>
+<b>Stale-fix</b> — daftar sesi di-refresh otomatis tiap <code>message.done</code> dan saat reconnect host.<br>
+<b>Reconnect otomatis</b> — watchdog 25 dtk ping / 75 dtk mati; reconnect tanpa relogin.<br>
+<b>Reset host</b> — setelah ack, stack dikosongkan + alert; host restart dan kembali online.
+</div>
+
+<script>
+/* ── port persis src/personas.ts + components/Mascot.tsx ── */
+const PERSONA_META={
+  "yui-conductor":{name:"Maestro Yui",shape:"diamond",color:"#f0b429"},
+  "yui-planner":{name:"Rommel Yui",shape:"pentagon",color:"#e05252"},
+  "yui-analyst":{name:"Nighty Yui",shape:"crescent",color:"#7b61ff"},
+  "yui-scholar":{name:"Pierre Yui",shape:"circle",color:"#4f9cf9"},
+  "yui-scribe":{name:"Poe Yui",shape:"triangle",color:"#38bdf8"},
+  "yui-coder":{name:"Hiro Yui",shape:"hexagon",color:"#22c55e"},
+  "yui-designer":{name:"Picasso Yui",shape:"star",color:"#ec4899"},
+  "yui-operator":{name:"Neo Yui",shape:"square",color:"#94a3b8"},
+  "yui-sherlock":{name:"Watson Yui",shape:"ring",color:"#d97706"}
+};
+function personaMeta(id){
+  if(id&&PERSONA_META[id])return PERSONA_META[id];
+  const short=(id||"yui").replace(/^yui-/,"");
+  return {name:"Yui "+short.charAt(0).toUpperCase()+short.slice(1),shape:"circle",color:"#6b7280"};
+}
+function shapePoints(shape,s){
+  const c=s/2;
+  switch(shape){
+    case "diamond":return `${c},3 ${s-3},${c} ${c},${s-3} 3,${c}`;
+    case "pentagon":return `${c},3 ${s-4},${c*0.38} ${s*0.8},${s-5} ${s*0.2},${s-5} 4,${c*0.38}`;
+    case "triangle":return `${c},4 ${s-5},${s-6} 5,${s-6}`;
+    case "hexagon":{const q=s*0.25;return `${q},5 ${s-q},5 ${s-4},${c} ${s-q},${s-5} ${q},${s-5} 4,${c}`;}
+    case "star":{const o=0.5*s;const pts=[];for(let i=0;i<10;i++){const r=i%2===0?s/2-2:s/4.6;const a=(Math.PI/5)*i-Math.PI/2;pts.push([o+r*Math.cos(a),o+r*Math.sin(a)]);}return pts.map(([x,y])=>`${x.toFixed(1)},${y.toFixed(1)}`).join(" ");}
+    case "square":return `5,5 ${s-5},5 ${s-5},${s-5} 5,${s-5}`;
+    default:return `5,5 ${s-5},5 ${s-5},${s-5} 5,${s-5}`;
+  }
+}
+function mascotSVG(personaId,size){
+  const meta=personaMeta(personaId),s=size;
+  const eyeY=s*0.44,eyeDX=s*0.18,eyeR=Math.max(2,s*0.075),pupilR=Math.max(1,s*0.035);
+  let body="";
+  if(meta.shape==="circle")body=`<circle cx="${s/2}" cy="${s/2}" r="${s/2-2}" fill="${meta.color}"/>`;
+  else if(meta.shape==="ring")body=`<circle cx="${s/2}" cy="${s/2}" r="${s/2-3}" fill="none" stroke="${meta.color}" stroke-width="${Math.max(3,s*0.12)}"/>`;
+  else if(meta.shape==="crescent")body=`<circle cx="${s/2}" cy="${s/2}" r="${s/2-2}" fill="${meta.color}"/><circle cx="${s*0.68}" cy="${s*0.36}" r="${s*0.34}" fill="#1a1a1a"/>`;
+  else body=`<polygon points="${shapePoints(meta.shape,s)}" fill="${meta.color}"/>`;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">${body}`+
+    `<circle cx="${s/2-eyeDX}" cy="${eyeY}" r="${eyeR}" fill="#ffffff"/><circle cx="${s/2+eyeDX}" cy="${eyeY}" r="${eyeR}" fill="#ffffff"/>`+
+    `<circle cx="${s/2-eyeDX}" cy="${eyeY}" r="${pupilR}" fill="#111111"/><circle cx="${s/2+eyeDX}" cy="${eyeY}" r="${pupilR}" fill="#111111"/></svg>`;
+}
+document.querySelectorAll("[data-mascot]").forEach(el=>{
+  el.innerHTML=mascotSVG(el.dataset.mascot,parseInt(el.dataset.size||"36",10));
+  el.style.display="inline-flex"; el.style.flexShrink="0";
+});
+/* board 9 persona */
+const board=document.getElementById("mascot-board");
+for(const [id,m] of Object.entries(PERSONA_META)){
+  const d=document.createElement("div"); d.className="mascot-item";
+  d.innerHTML=mascotSVG(id,44)+`<div>${m.name}<br><span>${id} · ${m.shape} · ${m.color}</span></div>`;
+  board.appendChild(d);
+}
+</script>
+</body>
+</html>
