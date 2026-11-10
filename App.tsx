@@ -3,7 +3,7 @@
 // Settings, lihat src/remote/RemoteProvider.tsx). Mockup 2025-11: Nunito,
 // icon SVG Lucide, toast floating (error), semua konten dalam SafeArea.
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -20,6 +20,7 @@ import { RemoteProvider } from "./src/remote/RemoteProvider";
 import { DEFAULT_PORTAL, loginWithPortal, PortalError, unlinkSelf } from "./src/portal";
 import { listHosts, RelayError, type HostEntry } from "./src/relay";
 import { clearSession, loadSession, saveSession, type Session } from "./src/store";
+import { registerPushToken, usePushTap } from "./src/push";
 import { C } from "./src/theme";
 import { EmptyState, ToastProvider, Txt, useToast } from "./src/ui";
 
@@ -79,6 +80,46 @@ export default function App() {
   useEffect(() => {
     if (screen.name === "hosts" && screen.session) void refresh(screen.session);
   }, [screen, refresh]);
+
+  // D76 push (MOB-3): daftarkan token FCM sekali per login (best-effort,
+  // tanpa Firebase config → diam) + tap notifikasi → buka host terkait.
+  const pendingTap = useRef<string | null>(null);
+  useEffect(() => {
+    if (session) void registerPushToken(session.portalUrl, session.device);
+  }, [session]);
+  const openFromPush = useCallback(
+    async (hostId: string): Promise<void> => {
+      if (!session) return;
+      let list = hosts;
+      if (!list?.some((h) => h.deviceId === hostId)) {
+        try {
+          list = await listHosts(session.relayUrl, session.device);
+          setHosts(list);
+        } catch {
+          return; // relay unreachable — user buka manual dari daftar host
+        }
+      }
+      const h = list?.find((x) => x.deviceId === hostId);
+      if (h) setScreen({ name: "remote", session, host: h });
+    },
+    [session, hosts],
+  );
+  usePushTap((info) => {
+    if (!info.hostId) return;
+    if (session) {
+      void openFromPush(info.hostId);
+    } else {
+      pendingTap.current = info.hostId; // belum di hosts screen (login flow)
+    }
+  });
+  // konsumsi tap yang datang sebelum session siap (cold start → login dulu)
+  useEffect(() => {
+    const id = pendingTap.current;
+    if (session && id) {
+      pendingTap.current = null;
+      void openFromPush(id);
+    }
+  }, [session, openFromPush]);
 
   async function signIn(): Promise<void> {
     setSigningIn(true);

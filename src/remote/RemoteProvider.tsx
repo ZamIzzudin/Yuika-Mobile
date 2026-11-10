@@ -17,6 +17,7 @@ import { SessionChat } from "../screens/SessionChat";
 import { ScreenView } from "../screens/ScreenView";
 import { ScreensScreen } from "../screens/ScreensScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
+import { MissionsScreen } from "../screens/MissionsScreen";
 import { FileViewer } from "../screens/FileViewer";
 
 export type StackEntry =
@@ -49,7 +50,7 @@ interface Approval {
   risk: "low" | "medium" | "high";
 }
 
-type Tab = "projects" | "screens" | "settings";
+type Tab = "missions" | "projects" | "screens" | "settings";
 
 export function RemoteProvider({
   relayUrl,
@@ -146,7 +147,8 @@ export function RemoteProvider({
         body = <FileViewer projectId={top.projectId} relPath={top.relPath} />;
         break;
     }
-  } else if (tab === "projects") body = <ProjectsScreen />;
+  } else if (tab === "missions") body = <MissionsScreen />;
+  else if (tab === "projects") body = <ProjectsScreen />;
   else if (tab === "screens") body = <ScreensScreen />;
   else body = <SettingsScreen />;
 
@@ -257,6 +259,7 @@ export function RemoteProvider({
           >
             {(
               [
+                ["missions", "Missions", "activity"],
                 ["projects", "Projects", "folder"],
                 ["screens", "Screens", "monitor"],
                 ["settings", "Settings", "gear"],

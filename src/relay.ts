@@ -301,6 +301,14 @@ export type RemoteEvent =
       approvalId: string;
       resolution: "approved" | "rejected" | "timeout";
     }
+  | {
+      proto: 1;
+      ev: "delegation.update";
+      sessionId?: string;
+      jobId: string;
+      state: "started" | "progress" | "done" | "paused";
+      detail?: string;
+    }
   | { proto: 1; ev: "projects.list"; rid: string; projects: ProjectSummary[] }
   | { proto: 1; ev: "project.detail"; rid: string; project: ProjectLite; taskStats: TaskStats; activeDelegations: number }
   | { proto: 1; ev: "project.tasks"; rid: string; projectId: string; tree: TaskNode[] }
