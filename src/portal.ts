@@ -9,7 +9,7 @@
  */
 import * as WebBrowser from "expo-web-browser";
 import * as Crypto from "expo-crypto";
-import { bytesToB64, generateDeviceKeys, type DeviceKeys } from "./crypto";
+import { bytesToB64, generateDeviceKeys, signChallenge, type DeviceKeys } from "./crypto";
 
 export const REDIRECT_URI = "yuika://auth/callback";
 export const DEFAULT_PORTAL = "https://yuika.notu.dev";
@@ -32,14 +32,21 @@ async function pkce(): Promise<{ verifier: string; challenge: string }> {
   return { verifier, challenge: b64url(hexToBytes(String(digestHex))) };
 }
 
-async function postJson(url: string, body: unknown): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  return { ok: res.ok, status: res.status, data };
+async function postJson(url: string, body: unknown, timeoutMs = 10_000): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+      signal: ac.signal,
+    });
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    return { ok: res.ok, status: res.status, data };
+  } finally {
+    clearTimeout(t);
+  }
 }
 
 export interface LoginResult {
@@ -50,6 +57,23 @@ export interface LoginResult {
 }
 
 export class PortalError extends Error {}
+
+/**
+ * Melepaskan device ini dari akun portal (sign-out symmetry): sig =
+ * Ed25519(deviceId|nonce) diverifikasi portal terhadap sign_pub tersimpan.
+ * Slot mobile = 1 per akun — tanpa ini, sign-out membiarkan slot terisi dan
+ * device mobile lain ditolak 409 sampai pemilik unlink manual di portal.
+ * Best-effort: error ditelan pemanggil (sign-out lokal tetap jalan).
+ */
+export async function unlinkSelf(portalUrl: string, device: DeviceKeys): Promise<void> {
+  const nonce = bytesToB64(Crypto.getRandomBytes(16));
+  const sig = signChallenge(device.signPriv, device.deviceId, nonce);
+  await postJson(
+    `${portalUrl.replace(/\/$/, "")}/api/devices/unlink-self`,
+    { deviceId: device.deviceId, nonce, sig },
+    6_000,
+  );
+}
 
 export async function loginWithPortal(portalUrl: string, existingKeys?: DeviceKeys): Promise<LoginResult> {
   const portal = portalUrl.replace(/\/+$/, "");

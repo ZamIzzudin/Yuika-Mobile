@@ -17,7 +17,7 @@ import { useFonts } from "expo-font";
 
 import { Icon, type IconName } from "./src/components/Icon";
 import { RemoteProvider } from "./src/remote/RemoteProvider";
-import { DEFAULT_PORTAL, loginWithPortal, PortalError } from "./src/portal";
+import { DEFAULT_PORTAL, loginWithPortal, PortalError, unlinkSelf } from "./src/portal";
 import { listHosts, RelayError, type HostEntry } from "./src/relay";
 import { clearSession, loadSession, saveSession, type Session } from "./src/store";
 import { C } from "./src/theme";
@@ -103,6 +103,10 @@ export default function App() {
   }
 
   async function signOut(): Promise<void> {
+    // Symmetry: sign-out di mobile juga melepas device dari portal (slot
+    // mobile = 1 per akun; tanpa ini slot tetap terisi sampai unlink manual).
+    // Best-effort + timeout 6s internal: portal down tidak menggantung sign-out.
+    if (session) await unlinkSelf(session.portalUrl, session.device).catch(() => undefined);
     await clearSession();
     setHosts(null);
     setScreen({ name: "login" });
