@@ -3,6 +3,7 @@
 // Settings, lihat src/remote/RemoteProvider.tsx). Mockup 2025-11: Nunito,
 // icon SVG Lucide, toast floating (error), semua konten dalam SafeArea.
 import { StatusBar } from "expo-status-bar";
+import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -23,6 +24,11 @@ import { clearSession, loadSession, saveSession, type Session } from "./src/stor
 import { registerPushToken, usePushTap } from "./src/push";
 import { C } from "./src/theme";
 import { EmptyState, ToastProvider, Txt, useToast } from "./src/ui";
+
+// Splash native (expo-splash-screen): tahan sampai font + session siap,
+// cegah layar blank saat cold start. Ikon + bg #1a1a1a dari app.json plugin.
+SplashScreen.setOptions({ duration: 300, fade: true });
+void SplashScreen.preventAutoHideAsync();
 
 const KIND_ICON: Record<string, IconName> = {
   desktop: "monitor",
@@ -64,6 +70,13 @@ export default function App() {
       setScreen(s ? { name: "hosts", session: s } : { name: "login" });
     })();
   }, []);
+
+  // Splash native baru dilepas setelah font dimuat & session selesai —
+  // transisi mulus dari splash ke UI tanpa frame blank.
+  const ready = fontsLoaded && screen.name !== "boot";
+  useEffect(() => {
+    if (ready) SplashScreen.hide();
+  }, [ready]);
 
   const refresh = useCallback(async (session: Session) => {
     setRefreshing(true);
