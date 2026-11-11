@@ -19,9 +19,12 @@ tercakup pattern `.gitignore` bila belum, tambahkan). `npx expo prebuild`
 mendeteksi file ini otomatis dan mengaktifkan Firebase init. Tanpa file ini
 registrasi token dilewati diam-diam (`src/push.ts` catch).
 
-Build release Codemagic: commit file terenkripsi atau set sebagai environment
-variable/file environment `GOOGLE_SERVICES_JSON` lalu tulis di script step
-sebelum prebuild.
+Build release Codemagic: `codemagic.yaml` sudah punya step "Materialize
+google-services.json" — set environment variable `GOOGLE_SERVICES_JSON`
+di Codemagic (App settings → Environment variables) berisi isi file
+(raw JSON atau base64), lalu re-run build. Tanpa env itu, APK CI dibangun
+tanpa FCM (push off, relay tetap jalan); build lokal otomatis pakai file
+yang ada di root repo.
 
 ## 3. Portal
 

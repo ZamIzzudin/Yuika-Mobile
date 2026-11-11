@@ -29,6 +29,20 @@ workflows:
             fs.writeFileSync('app.json', JSON.stringify(a, null, 2) + '\n');
             console.log('versionCode =', a.expo.android.versionCode);
           "
+      - name: Materialize google-services.json (FCM push, optional)
+        script: |
+          # Env var GOOGLE_SERVICES_JSON (raw JSON atau base64) di-set di
+          # Codemagic > App settings > Environment variables. Tanpa env ini
+          # build tetap jalan, push dinonaktifkan (relay tetap berfungsi).
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            case "$GOOGLE_SERVICES_JSON" in
+              '{'*) printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json ;;
+              *) printf '%s' "$GOOGLE_SERVICES_JSON" | base64 -d > google-services.json ;;
+            esac
+            echo "google-services.json written ($(wc -c < google-services.json) bytes)"
+          else
+            echo "GOOGLE_SERVICES_JSON unset: build tanpa FCM (push off, relay on)"
+          fi
       - name: Prebuild android
         script: npx expo prebuild -p android --no-install
       - name: Build release APK (signed via keys/ + config plugin)
