@@ -144,6 +144,11 @@ const ICONS: Record<string, React.ReactNode> = {
       <Path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" {...P} />
     </>
   ),
+  "clip": (
+    <>
+      <Path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" {...P} />
+    </>
+  ),
   "send": (
     <>
       <Path d="m22 2-7 20-4-9-9-4Z" {...P} />
@@ -181,7 +186,7 @@ const ICONS: Record<string, React.ReactNode> = {
   ),
 };
 
-export type IconName = "monitor" | "globe" | "wrench" | "check" | "x" | "arrow-r" | "alert" | "triangle" | "info" | "check-c" | "chev-r" | "chev-d" | "chev-l" | "folder" | "plus" | "grid" | "message" | "list" | "users" | "activity" | "terminal" | "plug" | "shield" | "send" | "file" | "file-code" | "file-text" | "gear";
+export type IconName = "monitor" | "globe" | "wrench" | "check" | "x" | "arrow-r" | "alert" | "triangle" | "info" | "check-c" | "chev-r" | "chev-d" | "chev-l" | "folder" | "plus" | "grid" | "message" | "list" | "users" | "activity" | "terminal" | "plug" | "shield" | "clip" | "send" | "file" | "file-code" | "file-text" | "gear";
 
 export function Icon({ name, size = 20, color }: { name: IconName; size?: number; color?: string }) {
   return (

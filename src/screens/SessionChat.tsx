@@ -17,6 +17,8 @@ import {
   View,
 } from "react-native";
 
+import { File as FsFile } from "expo-file-system";
+
 import { Icon } from "../components/Icon";
 import { Markdown } from "../components/Markdown";
 import { Mascot } from "../components/Mascot";
@@ -37,6 +39,23 @@ interface Bubble {
 
 const WINDOW_FIRST = 8; // bubble yang dirender pertama kali
 const WINDOW_STEP = 16; // batch tambahan saat scroll ke atas
+
+// Lampiran chat (v1.3/D89): ekstensi sama dengan whitelist server.
+interface Attachment {
+  key: string;
+  name: string;
+  size: number;
+  busy: boolean;
+  progress?: string;
+  path?: string;
+  error?: string;
+}
+const UPLOAD_OK_EXT = new Set([
+  ".pdf", ".xlsx", ".xls", ".csv", ".md", ".txt", ".json",
+  ".html", ".htm", ".xml", ".yaml", ".yml",
+]);
+const UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
+const ATTACH_MAX = 5;
 
 export function SessionChat({
   sessionId,
@@ -60,6 +79,47 @@ export function SessionChat({
   // load-earlier: simpan metrik sebelum batch baru agar offset dipertahankan
   const restoring = useRef(false);
   const prevMetrics = useRef<{ offset: number; height: number } | null>(null);
+  const [atts, setAtts] = useState<Attachment[]>([]);
+
+  // Pilih dokumen (expo-file-system picker) → upload via relay → chip path.
+  async function pickAttachments(): Promise<void> {
+    if (atts.length >= ATTACH_MAX) return;
+    let picked: FsFile[];
+    try {
+      const res = await FsFile.pickFileAsync({ multipleFiles: true });
+      if (res.canceled) return;
+      picked = res.result;
+    } catch {
+      return; // picker gagal dibuka (mis. izin) — diam saja
+    }
+    for (const f of picked.slice(0, ATTACH_MAX - atts.length)) {
+      const key = `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const name = f.name || "file";
+      const ext = name.slice(name.lastIndexOf(".")).toLowerCase();
+      const startAt = atts.length; // index chip entry ini
+      const push = (patch: Partial<Attachment>): void =>
+        setAtts((prev) => prev.map((a) => (a.key === key ? { ...a, ...patch } : a)));
+      if (!UPLOAD_OK_EXT.has(ext)) {
+        setAtts((prev) => [...prev, { key, name, size: 0, busy: false, error: `Unsupported format ${ext || "?"}` }]);
+        continue;
+      }
+      if ((f.size ?? 0) > UPLOAD_MAX_BYTES) {
+        setAtts((prev) => [...prev, { key, name, size: f.size ?? 0, busy: false, error: "Max 10 MB" }]);
+        continue;
+      }
+      setAtts((prev) => [...prev, { key, name, size: f.size ?? 0, busy: true }]);
+      try {
+        const b64 = await f.base64();
+        const r = await rs.uploadSessionFile(sessionId, name, b64, (sent, total) =>
+          push({ progress: `${sent}/${total}` }),
+        );
+        push({ busy: false, progress: undefined, path: r.path });
+      } catch (e) {
+        push({ busy: false, progress: undefined, error: e instanceof Error ? e.message : "Upload failed" });
+      }
+      void startAt; // (index hanya utk keterbacaan)
+    }
+  }
 
   // snapshot awal (request ber-rid → reply session.snapshot).
   useEffect(() => {
@@ -124,9 +184,16 @@ export function SessionChat({
   );
 
   function sendPrompt(): void {
-    const msg = draft.trim();
-    if (!msg || running) return;
+    if (running || atts.some((a) => a.busy)) return;
+    const attached = atts.filter((a) => a.path).map((a) => a.path!);
+    const base = draft.trim();
+    if (!base && attached.length === 0) return;
+    const msg =
+      attached.length > 0
+        ? `${base}${base ? "\n\n" : ""}[files attached via chat]\n${attached.map((p) => `- ${p}`).join("\n")}`
+        : base;
     setDraft("");
+    setAtts([]);
     setAll((b) => [...(b ?? []), { key: `u-${Date.now()}`, role: "user", text: msg, at: Date.now() }]);
     setRunning(true);
     void rs.sendAction({ proto: 1, act: "send_prompt", rid: nextRid(), sessionId, message: msg });
@@ -318,7 +385,25 @@ export function SessionChat({
         }
       />
 
-      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderTopColor: C.line, borderTopWidth: 1 }}>
+      {atts.length > 0 ? (
+        <View style={{ paddingHorizontal: 12, paddingTop: 8, gap: 6, borderTopColor: C.line, borderTopWidth: 1 }}>
+          {atts.map((a) => (
+            <View key={a.key} style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: C.surface, borderColor: a.error ? C.danger : C.line, borderWidth: 1, borderRadius: R.card, paddingHorizontal: 10, paddingVertical: 6 }}>
+              <Icon name="clip" size={13} color={a.error ? C.danger : C.dim} />
+              <Txt style={{ flex: 1, fontSize: 12 }} numberOfLines={1}>
+                {a.name}
+                {a.busy && a.progress ? `  ${a.progress}` : ""}
+                {!a.busy && !a.error && a.path ? `  ${(a.size / 1024).toFixed(0)} KB` : ""}
+              </Txt>
+              {a.error ? <Txt style={{ fontSize: 11, color: C.danger }} numberOfLines={1}> {a.error}</Txt> : null}
+              <Pressable hitSlop={8} onPress={() => setAtts((prev) => prev.filter((x) => x.key !== a.key))}>
+                <Icon name="x" size={13} color={C.dim} />
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      ) : null}
+      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderTopColor: C.line, borderTopWidth: atts.length > 0 ? 0 : 1 }}>
         <TextInput
           value={draft}
           onChangeText={setDraft}
@@ -339,8 +424,26 @@ export function SessionChat({
           }}
         />
         <Pressable
+          onPress={pickAttachments}
+          disabled={atts.length >= ATTACH_MAX || atts.some((a) => a.busy)}
+          hitSlop={6}
+          style={{
+            backgroundColor: C.surface,
+            borderColor: C.line,
+            borderWidth: 1,
+            borderRadius: R.bubble,
+            width: 38,
+            height: 38,
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: atts.length >= ATTACH_MAX || atts.some((a) => a.busy) ? 0.45 : 1,
+          }}
+        >
+          <Icon name="clip" size={17} color={C.text} />
+        </Pressable>
+        <Pressable
           onPress={sendPrompt}
-          disabled={!draft.trim() || running}
+          disabled={(!draft.trim() && atts.every((a) => !a.path)) || running || atts.some((a) => a.busy)}
           hitSlop={6}
           style={{
             backgroundColor: C.accent,
@@ -349,7 +452,7 @@ export function SessionChat({
             height: 38,
             alignItems: "center",
             justifyContent: "center",
-            opacity: !draft.trim() || running ? 0.45 : 1,
+            opacity: (!draft.trim() && atts.every((a) => !a.path)) || running || atts.some((a) => a.busy) ? 0.45 : 1,
           }}
         >
           <Icon name="send" size={18} color="#fff" />

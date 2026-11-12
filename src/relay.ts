@@ -286,6 +286,8 @@ export type RemoteEvent =
       seq: number;
       finish: "stop" | "error" | "cancelled";
     }
+  | { proto: 1; ev: "session.upload.progress"; rid: string; received: number }
+  | { proto: 1; ev: "session.uploaded"; rid: string; path: string; bytes: number }
   | {
       proto: 1;
       ev: "approval.request";
@@ -408,6 +410,36 @@ export class RemoteSession {
       });
       void this.sendAction({ proto: 1, act, rid, ...extra });
     });
+  }
+
+  /**
+   * v1.3 (D89): upload lampiran chat — payload base64 UTUH dipecah fragmen
+   * (relay MAX_FRAME 256KB; potongan di kelipatan 4 agar tiap fragmen
+   * base64-valid). Fragmen non-final dikirim biasa (host balas progress,
+   * diabaikan); fragmen FINAL via request() → session.uploaded{path,bytes}.
+   * Timeout final panjang (file besar di jaringan lambat).
+   */
+  async uploadSessionFile(
+    sessionId: string,
+    name: string,
+    dataB64: string,
+    onProgress?: (sentParts: number, totalParts: number) => void,
+  ): Promise<{ path: string; bytes: number }> {
+    const CHUNK = 240_000; // < MAX_FRAME dikurangi envelope JSON + margin
+    const parts = Math.max(1, Math.ceil(dataB64.length / CHUNK));
+    for (let part = 0; part < parts - 1; part++) {
+      await this.sendAction({
+        proto: 1, act: "session.upload", rid: nextRid(), sessionId, name,
+        part, parts, chunk: dataB64.slice(part * CHUNK, (part + 1) * CHUNK),
+      });
+      onProgress?.(part + 1, parts);
+    }
+    const fin = await this.request<{ proto: 1; ev: "session.uploaded"; rid: string; path: string; bytes: number }>(
+      "session.upload",
+      { sessionId, name, part: parts - 1, parts, chunk: dataB64.slice((parts - 1) * CHUNK) },
+      120_000,
+    );
+    return { path: fin.path, bytes: fin.bytes };
   }
 
   private settleRid(ev: RemoteEvent): void {
