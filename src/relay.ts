@@ -99,6 +99,8 @@ export interface TranscriptMsg {
   personaId?: string;
   text: string;
   at: number;
+  /** D123: seq messages di host (dasar cursor load_older). */
+  seq?: number;
 }
 
 // ── v1.2: mission-control data shapes ──────────────────────────────────────
@@ -271,6 +273,10 @@ export type RemoteEvent =
       sessionId: string;
       messages: TranscriptMsg[];
       latestSeq: number;
+      /** D123: true = masih ada pesan lebih tua (muat via load_older). */
+      hasOlder?: boolean;
+      /** D123: balasan load_older (halaman lampau); bus tidak menimpanya. */
+      older?: boolean;
     }
   | {
       proto: 1;
@@ -440,6 +446,28 @@ export class RemoteSession {
       120_000,
     );
     return { path: fin.path, bytes: fin.bytes };
+  }
+
+  /**
+   * D123: muat satu halaman riwayat lebih tua (chat panjang). Host membaca
+   * satu halaman keyset dari DB dan membalas session.snapshot ber-rid sama
+   * (messages = halaman lebih tua, hasOlder). beforeSeq = seq pesan terlama
+   * yang sudah dimiliki remote.
+   */
+  async loadOlder(
+    sessionId: string,
+    beforeSeq: number,
+    limit = 30,
+  ): Promise<{ messages: TranscriptMsg[]; hasOlder: boolean }> {
+    const ev = await this.request<{
+      proto: 1;
+      ev: "session.snapshot";
+      rid: string;
+      sessionId: string;
+      messages: TranscriptMsg[];
+      hasOlder?: boolean;
+    }>("load_older", { sessionId, beforeSeq, limit }, 20_000);
+    return { messages: ev.messages, hasOlder: ev.hasOlder ?? false };
   }
 
   private settleRid(ev: RemoteEvent): void {

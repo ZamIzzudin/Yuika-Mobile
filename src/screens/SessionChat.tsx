@@ -35,6 +35,8 @@ interface Bubble {
   personaId?: string;
   text: string;
   at: number;
+  /** D123: seq messages di host (dasar cursor load_older). */
+  seq?: number;
 }
 
 const WINDOW_FIRST = 8; // bubble yang dirender pertama kali
@@ -70,6 +72,10 @@ export function SessionChat({
   const meta = personaMeta(personaId);
   const [all, setAll] = useState<Bubble[] | null>(null);
   const [window_, setWindow] = useState(WINDOW_FIRST);
+  // D123: pagination riwayat lampau (cursor seq pesan terlama yang dimiliki).
+  const [hasOlder, setHasOlder] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const oldestSeq = useRef<number | null>(null);
   const [streaming, setStreaming] = useState("");
   const [running, setRunning] = useState(false);
   const [draft, setDraft] = useState("");
@@ -79,6 +85,8 @@ export function SessionChat({
   // load-earlier: simpan metrik sebelum batch baru agar offset dipertahankan
   const restoring = useRef(false);
   const prevMetrics = useRef<{ offset: number; height: number } | null>(null);
+  // D123: cegah pemicu load_older beruntun dari onScroll yang rapat.
+  const localLoading = useRef(false);
   const [atts, setAtts] = useState<Attachment[]>([]);
 
   // Pilih dokumen (expo-file-system picker) → upload via relay → chip path.
@@ -141,14 +149,20 @@ export function SessionChat({
         if ("sessionId" in ev && ev.sessionId !== sessionId) return;
         switch (ev.ev) {
           case "session.snapshot":
-            setAll(
-              ev.messages
+            // D123: snapshot `older` (balasan load_older) ditangani jalur
+            // promise request() di loadOlder(); bus TIDAK menimpanya.
+            if (ev.older) break;
+            {
+              const bubbles = ev.messages
                 .filter(
                   (m): m is TranscriptMsg & { role: "user" | "assistant" } =>
                     (m.role === "user" || m.role === "assistant") && m.text.trim().length > 0,
                 )
-                .map((m, i) => ({ key: `h-${i}`, role: m.role, personaId: m.personaId, text: m.text, at: m.at })),
-            );
+                .map((m, i) => ({ key: `h-${i}`, role: m.role, personaId: m.personaId, text: m.text, at: m.at, seq: m.seq }));
+              setAll(bubbles);
+              oldestSeq.current = bubbles.find((b) => typeof b.seq === "number")?.seq ?? null;
+              setHasOlder(ev.hasOlder === true);
+            }
             setWindow(WINDOW_FIRST);
             setStreaming("");
             setRunning(false);
@@ -201,6 +215,45 @@ export function SessionChat({
 
   function stop(): void {
     void rs.sendAction({ proto: 1, act: "cancel", rid: nextRid(), sessionId });
+  }
+
+  /** D123: tarik satu halaman riwayat lebih tua dari host (chat panjang).
+   *  Halaman di-prepend ke transcript; posisi baca dipertahankan lewat
+   *  mekanisme restoring/onContentSizeChange yang sudah ada (metrik scroll
+   *  dikirim caller saat batch lokal sudah habis tapi masih ada di host). */
+  async function loadOlder(offset: number, height: number): Promise<void> {
+    const before = oldestSeq.current;
+    if (before === null || loadingOlder || !hasOlder) return;
+    setLoadingOlder(true);
+    try {
+      const res = await rs.loadOlder(sessionId, before, WINDOW_STEP);
+      const older = res.messages
+        .filter(
+          (m): m is TranscriptMsg & { role: "user" | "assistant" } =>
+            (m.role === "user" || m.role === "assistant") && m.text.trim().length > 0,
+        )
+        .map((m, i) => ({
+          key: `o-${m.seq ?? i}-${i}`,
+          role: m.role,
+          personaId: m.personaId,
+          text: m.text,
+          at: m.at,
+          seq: m.seq,
+        }));
+      if (older.length > 0) {
+        restoring.current = true;
+        prevMetrics.current = { offset, height };
+        setAll((b) => [...older, ...(b ?? [])]);
+        setWindow((w) => w + older.length);
+        const firstSeq = older.find((b) => typeof b.seq === "number")?.seq;
+        if (typeof firstSeq === "number") oldestSeq.current = firstSeq;
+      }
+      setHasOlder(res.hasOlder);
+    } catch {
+      // jaringan/host sibuk: biarkan; user bisa scroll lagi untuk mencoba ulang
+    } finally {
+      setLoadingOlder(false);
+    }
   }
 
   const data = useMemo(() => {
@@ -298,6 +351,20 @@ export function SessionChat({
             restoring.current = true;
             prevMetrics.current = { offset: contentOffset.y, height: contentSize.height };
             setWindow((w) => w + WINDOW_STEP);
+          } else if (
+            // D123: window lokal habis TAPI host masih punya riwayat lebih tua
+            // → tarik satu halaman dari host (chat panjang, mobile).
+            !restoring.current &&
+            contentOffset.y < 48 &&
+            hiddenCount === 0 &&
+            hasOlder &&
+            !loadingOlder &&
+            !localLoading.current
+          ) {
+            localLoading.current = true;
+            void loadOlder(contentOffset.y, contentSize.height).finally(() => {
+              localLoading.current = false;
+            });
           }
         }}
         scrollEventThrottle={120}
@@ -319,6 +386,10 @@ export function SessionChat({
           hiddenCount > 0 ? (
             <Txt style={{ color: C.faint, fontSize: 11, textAlign: "center", paddingVertical: 6 }}>
               {hiddenCount} earlier message{hiddenCount === 1 ? "" : "s"} — scroll up to load
+            </Txt>
+          ) : hasOlder ? (
+            <Txt style={{ color: C.faint, fontSize: 11, textAlign: "center", paddingVertical: 6 }}>
+              {loadingOlder ? "Loading earlier messages…" : "Scroll up to load earlier messages"}
             </Txt>
           ) : undefined
         }
